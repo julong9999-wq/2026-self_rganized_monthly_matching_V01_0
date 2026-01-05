@@ -187,52 +187,101 @@ const App: React.FC = () => {
       return null;
   };
 
-  // --- Yield Calculation Logic ---
-  const calculateAnnualYield = (dividends: Dividend[], currentPrice: number): number => {
+  // --- Yield Calculation Helpers ---
+
+  // 輔助函式：根據類別判斷配息計算次數
+  const getDividendCountLimit = (category: CategoryKey, code: string): number => {
+    // 1. 月配 (AD 或 特定債券) -> 12 次
+    const monthlyBonds = ['00937B', '00772B', '00933B', '00773B'];
+    if (category === 'AD' || monthlyBonds.some(b => code.includes(b))) {
+        return 12;
+    }
+
+    // 2. 季配 (AA, AB, AC) -> 4 次
+    if (['AA', 'AB', 'AC'].includes(category)) {
+        return 4;
+    }
+
+    // 3. 其他 (AF) - 判斷無配息、半年配、年配
+    if (category === 'AF') {
+        // 已知無配息名單 (可持續補充)
+        const noDivCodes = [
+            '00757', '00893', '00895', '00909', '00762', '00910', '00911', 
+        ];
+        if (noDivCodes.some(c => code.includes(c))) return 0;
+
+        // 已知半年配名單 (可持續補充)
+        const semiAnnualCodes = ['0050', '006208', '00692'];
+        if (semiAnnualCodes.some(c => code.includes(c))) return 2;
+
+        // 預設年配 -> 1 次 (包含大部分國際型 00646, 00830 等)
+        return 1;
+    }
+
+    // Default fallback
+    return 1;
+  };
+
+  // 殖利率計算：僅計算歷史資料 (不含未來)，依據次數 N 加總
+  const calculateAnnualYield = (dividends: Dividend[], currentPrice: number, category: CategoryKey, code: string): number => {
       if (!currentPrice || currentPrice === 0) return 0;
       if (!dividends || dividends.length === 0) return 0;
 
+      const countLimit = getDividendCountLimit(category, code);
+      if (countLimit === 0) return 0;
+
       const today = new Date();
       today.setHours(0,0,0,0);
-      const oneYearAgo = new Date(today);
-      oneYearAgo.setFullYear(today.getFullYear() - 1);
 
-      const ttmDividends = dividends.filter(d => {
-          const dDate = parseSmartDate(d.date);
-          if (!dDate) return false;
-          return dDate >= oneYearAgo && dDate <= today; 
-      });
+      // 1. 篩選出「非未來」的歷史資料
+      const historicalDivs = dividends
+          .filter(d => {
+              const dDate = parseSmartDate(d.date);
+              return dDate && dDate <= today; 
+          })
+          .sort((a, b) => {
+              const dA = parseSmartDate(a.date);
+              const dB = parseSmartDate(b.date);
+              return (dB?.getTime() || 0) - (dA?.getTime() || 0);
+          });
       
-      const totalAmount = ttmDividends.reduce((sum, d) => sum + d.amount, 0);
+      // 2. 取最近 N 筆
+      const targetDivs = historicalDivs.slice(0, countLimit);
+      const totalAmount = targetDivs.reduce((sum, d) => sum + d.amount, 0);
+      
       return parseFloat(((totalAmount / currentPrice) * 100).toFixed(2));
   };
 
+  // 預估殖利率計算：只有在「有未來配息資料」時才計算，否則為 0
   const calculateEstimatedYield = (dividends: Dividend[], currentPrice: number, category: CategoryKey, code: string): number => {
       if (!currentPrice || currentPrice === 0) return 0;
       if (!dividends || dividends.length === 0) return 0;
 
-      const sortedDivs = [...dividends].sort((a, b) => {
+      const countLimit = getDividendCountLimit(category, code);
+      if (countLimit === 0) return 0;
+
+      const today = new Date();
+      today.setHours(0,0,0,0);
+
+      // 1. 檢查是否有「未來」配息資料
+      const hasFuture = dividends.some(d => {
+          const dDate = parseSmartDate(d.date);
+          return dDate && dDate > today;
+      });
+
+      if (!hasFuture) {
+          return 0; // 若無未來資料，回傳 0 (顯示空值)
+      }
+
+      // 2. 若有未來資料，則納入所有資料 (未來+歷史) 進行排序
+      const allSortedDivs = [...dividends].sort((a, b) => {
           const dA = parseSmartDate(a.date);
           const dB = parseSmartDate(b.date);
           return (dB?.getTime() || 0) - (dA?.getTime() || 0);
       });
 
-      const latestDiv = sortedDivs[0];
-      const latestDate = parseSmartDate(latestDiv.date);
-      const today = new Date();
-      today.setHours(0,0,0,0);
-
-      if (!latestDate || latestDate <= today) {
-          return 0;
-      }
-
-      let targetCount = 4;
-      const isMonthlyBond = ['00937B', '00772B', '00933B', '00773B'].some(c => code.includes(c));
-      if (category === 'AD' || isMonthlyBond) {
-          targetCount = 12;
-      }
-
-      const targetDivs = sortedDivs.slice(0, targetCount);
+      // 3. 取最近 N 筆 (此時最近的一筆應為未來配息)
+      const targetDivs = allSortedDivs.slice(0, countLimit);
       const totalEstimatedAmount = targetDivs.reduce((sum, d) => sum + d.amount, 0);
 
       return parseFloat(((totalEstimatedAmount / currentPrice) * 100).toFixed(2));
@@ -258,16 +307,21 @@ const App: React.FC = () => {
           const mergedEtfs = parsedEtfs.map(etf => {
               const divs = dividendMap[etf.code] || [];
               
+              // 1. 計算殖利率 (僅歷史, 次數制)
               let finalYield = etf.dividendYield;
-              const calculatedYield = calculateAnnualYield(divs, etf.priceCurrent);
+              const calculatedYield = calculateAnnualYield(divs, etf.priceCurrent, etf.category, etf.code);
+              // 如果我們計算出的殖利率 > 0，則優先使用，否則使用 CSV 原始欄位
               if (calculatedYield > 0) {
                   finalYield = calculatedYield;
               }
 
+              // 2. 計算預估殖利率 (含未來, 需有未來資料才算)
               const estYield = calculateEstimatedYield(divs, etf.priceCurrent, etf.category, etf.code);
 
+              // 3. 計算含息報酬
               let finalTotalReturn = etf.totalReturn;
               if (etf.priceBase > 0) {
+                  // 找出 Base Date 之後的所有配息 (僅歷史)
                   const dividendsSinceBase = divs.filter(d => {
                       const dDate = parseSmartDate(d.date);
                       return dDate && dDate >= baseDate && dDate <= today;

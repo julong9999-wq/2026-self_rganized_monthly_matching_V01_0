@@ -25,9 +25,11 @@ const FILTERS = [
 const CATEGORY_MAPPING: Record<string, string[]> = {
   '高息': ['0056', '00713', '00731', '00878', '00915', '00918', '00919', '00932'],
   '市值': ['00888', '00905', '00912', '00690', '00850', '00894', '00938', '009802', '009803', '009808'],
+  // 修正：主題型清單
   '主題': ['00904', '00927', '00947', '00891', '00728', '00896', '00903', '00921'], 
   '主動': ['00980A', '00981A', '00982A', '00983A', '00984A', '00985A', '00986A'], 
   '國外': ['00908', '00956', '00960', '00771', '00712', '00972'],
+  // 修正：國際型 (共 12 檔)
   '國際': ['00645', '00646', '00662', '00757', '00762', '00830', '00885', '00893', '00895', '00909', '00910', '00911'],
   // '月配' 與 '債券' 直接透過 CategoryKey 判斷
 };
@@ -151,10 +153,10 @@ const AnalysisView: React.FC<Props> = ({ etfs, lastUpdated, onAddToPortfolio }) 
           return etfs.filter(e => e.category === 'AE').sort((a,b) => a.code.localeCompare(b.code));
       }
       
-      // 其他自訂分類 (只篩選季配息商品 AA/AB/AC)
+      // 其他自訂分類 (不再限制類別，允許 AF 類別如國際型顯示)
       const targetCodes = CATEGORY_MAPPING[activeFilter] || [];
       return etfs.filter(e => 
-          ['AA', 'AB', 'AC'].includes(e.category) && targetCodes.some(code => e.code.includes(code))
+          targetCodes.some(code => e.code.includes(code))
       ).sort((a,b) => a.code.localeCompare(b.code));
   }, [etfs, activeFilter]);
 

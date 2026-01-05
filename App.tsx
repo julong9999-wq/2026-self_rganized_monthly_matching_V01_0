@@ -551,6 +551,7 @@ const App: React.FC = () => {
                 <AnalysisView 
                     etfs={etfs}
                     lastUpdated={lastUpdated}
+                    onAddToPortfolio={handleAddToPortfolio}
                 />
              );
           

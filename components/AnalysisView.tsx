@@ -1,33 +1,39 @@
 
 import React, { useState, useMemo } from 'react';
 import { EtfData, CategoryKey, Dividend } from '../types';
-import { LineChart, ArrowLeft, BarChart3, CircleAlert, X } from 'lucide-react';
+import { LineChart, ArrowLeft, BarChart3, CircleAlert, X, Plus } from 'lucide-react';
 
 interface Props {
   etfs: EtfData[];
   lastUpdated: Date | null;
+  onAddToPortfolio: (etf: EtfData) => void;
 }
 
-// 定義過濾器按鈕 (新增 '主動')
+// 定義過濾器按鈕 (新增 '主動', '國際')
 const FILTERS = [
   { key: '高息', label: '高息' },
   { key: '市值', label: '市值' },
   { key: '主題', label: '主題' },
   { key: '主動', label: '主動' },
   { key: '國外', label: '國外' },
+  { key: '國際', label: '國際' },
   { key: '月配', label: '月配' },
   { key: '債券', label: '債券' },
 ];
 
-// 硬編碼分類對照表 (依照使用者需求更新)
+// 硬編碼分類對照表 (依照使用者最新需求更新)
 const CATEGORY_MAPPING: Record<string, string[]> = {
   '高息': ['0056', '00713', '00731', '00878', '00915', '00918', '00919', '00932'],
-  '市值': ['00690', '00850', '00888', '00894', '00905', '00912', '00938', '009808'],
-  '主題': ['00728', '00891', '00896', '00903', '00904', '00921', '00927', '00947', '009802', '009803'], // 加入 00728
+  '市值': ['00888', '00905', '00912', '00690', '00850', '00894', '00938', '009802', '009803', '009808'],
+  '主題': ['00904', '00927', '00947', '00891', '00728', '00896', '00903', '00921'], 
   '主動': ['00980A', '00981A', '00982A', '00983A', '00984A', '00985A', '00986A'], 
-  '國外': ['00712', '00771', '00908', '00956', '00960', '00972'],
+  '國外': ['00908', '00956', '00960', '00771', '00712', '00972'],
+  '國際': ['00645', '00646', '00662', '00757', '00762', '00830', '00885', '00893', '00895', '00909', '00910', '00911'],
   // '月配' 與 '債券' 直接透過 CategoryKey 判斷
 };
+
+// 用於顯示灰色底色的國際型與無配息商品
+const GRAY_CODES = ['00645', '00646', '00662', '00757', '00762', '00830', '00885', '00893', '00895', '00909', '00910', '00911'];
 
 // 輔助：判斷是否為未來日期
 const isFutureDate = (dateStr: string) => {
@@ -97,30 +103,36 @@ const formatDate = (dateStr: string): string => {
     return cleanStr;
 };
 
-// 輔助：取得卡片顏色樣式 (沿用)
+// 輔助：取得卡片顏色樣式 (更新邏輯)
 const getCardStyle = (etf: EtfData) => {
-    const code = etf.code;
+    // 1. 特殊名單：國際/無配息 -> 淡灰色
+    if (GRAY_CODES.includes(etf.code)) {
+        return 'bg-slate-100 border-slate-300';
+    }
+
     let type = etf.category;
     
-    // 債券細分顏色
+    // 2. 債券：根據配息頻率重新歸類
     if (etf.category === 'AE') {
+        const code = etf.code;
         const monthlyBonds = ['00937B', '00772B', '00933B', '00773B'];
-        if (monthlyBonds.some(b => code.includes(b))) type = 'AD'; // 用月配顏色
-        else if (['00720B', '00725B', '00724B'].some(b => code.includes(b))) type = 'AA';
-        else if (['00679B', '00761B', '00795B'].some(b => code.includes(b))) type = 'AB';
-        else type = 'AC';
+        
+        if (monthlyBonds.some(b => code.includes(b))) type = 'AD'; // 月配 -> 茶色
+        else if (['00720B', '00725B', '00724B'].some(b => code.includes(b))) type = 'AA'; // 季一 -> 藍色
+        else if (['00679B', '00761B', '00795B'].some(b => code.includes(b))) type = 'AB'; // 季二 -> 綠色
+        else type = 'AC'; // 季三/其他 -> 橘色
     }
 
     switch (type) {
-        case 'AA': return 'bg-blue-50 border-blue-200';
-        case 'AB': return 'bg-emerald-50 border-emerald-200';
-        case 'AC': return 'bg-orange-50 border-orange-200';
-        case 'AD': return 'bg-amber-50 border-amber-200';
-        default: return 'bg-white border-slate-200';
+        case 'AA': return 'bg-blue-50 border-blue-200';     // 季一: 淡藍
+        case 'AB': return 'bg-emerald-50 border-emerald-200'; // 季二: 淡綠
+        case 'AC': return 'bg-orange-50 border-orange-200';  // 季三: 淡橘
+        case 'AD': return 'bg-amber-50 border-amber-200';    // 月配: 淡茶色
+        default: return 'bg-slate-100 border-slate-300';      // 預設: 淡灰色
     }
-  };
+};
 
-const AnalysisView: React.FC<Props> = ({ etfs, lastUpdated }) => {
+const AnalysisView: React.FC<Props> = ({ etfs, lastUpdated, onAddToPortfolio }) => {
   const [activeFilter, setActiveFilter] = useState('高息');
   const [selectedEtf, setSelectedEtf] = useState<EtfData | null>(null); // 詳細資料
   const [chartEtf, setChartEtf] = useState<EtfData | null>(null); // 分析圖表
@@ -426,13 +438,22 @@ const AnalysisView: React.FC<Props> = ({ etfs, lastUpdated }) => {
                  
                  return (
                      <div key={etf.code} className={`rounded-lg p-2 shadow-sm border flex flex-col gap-0.5 ${cardStyle}`}>
-                         {/* Row 1 */}
-                         <div className="flex items-baseline gap-2 border-b border-black/5 pb-1 mb-0.5">
-                            <span className="text-[20px] font-bold text-blue-700">{etf.code}</span>
-                            <span className="text-[18px] font-light text-slate-500 truncate flex-1 leading-tight">{etf.name}</span>
+                         {/* Row 1: Stock Code / Name / Chart Button */}
+                         <div className="flex justify-between items-center border-b border-black/5 pb-1 mb-0.5">
+                            <div className="flex items-baseline gap-2 overflow-hidden">
+                                <span className="text-[20px] font-bold text-blue-700 whitespace-nowrap">{etf.code}</span>
+                                <span className="text-[18px] font-light text-slate-500 truncate">{etf.name}</span>
+                            </div>
+                            <button 
+                                onClick={(e) => { e.stopPropagation(); setChartEtf(etf); }}
+                                className="w-9 h-9 flex items-center justify-center bg-white/80 border border-slate-300 rounded-lg hover:bg-slate-50 shrink-0 ml-2 shadow-sm"
+                                title="分析圖表"
+                            >
+                                <BarChart3 className="w-5 h-5 text-slate-600" />
+                            </button>
                          </div>
 
-                         {/* Row 2: 佈局優化 (Grid 改為 [32% 22% 30% 16%]) */}
+                         {/* Row 2: Price / Yield / Return / Add Button */}
                          <div className="grid grid-cols-[32%_22%_30%_16%] items-center gap-0 leading-tight py-1 divide-x divide-slate-200/60">
                             <div className="text-left flex flex-col px-1">
                                 <span className="text-[10px] font-light text-slate-500 mb-0.5">最近股價</span>
@@ -442,7 +463,6 @@ const AnalysisView: React.FC<Props> = ({ etfs, lastUpdated }) => {
                                 <span className="text-[10px] font-light text-slate-500 mb-0.5">殖利率</span>
                                 <span className="text-[18px] font-bold text-slate-900 leading-none">{etf.dividendYield}%</span>
                             </div>
-                            {/* 調整：報酬率靠右對齊 (text-right) */}
                             <div className="text-right flex flex-col px-1 pr-2">
                                 <span className="text-[10px] font-light text-slate-500 mb-0.5">報酬率</span>
                                 <span className={`text-[18px] font-bold leading-none ${etf.returnRate >= 0 ? 'text-red-600' : 'text-green-600'}`}>
@@ -450,39 +470,39 @@ const AnalysisView: React.FC<Props> = ({ etfs, lastUpdated }) => {
                                 </span>
                             </div>
                             <div className="text-right flex justify-end px-1">
-                                {/* Button h: Chart */}
-                                <button 
-                                    onClick={() => setChartEtf(etf)}
-                                    className="flex flex-col items-center justify-center bg-white/80 border border-slate-300 rounded-lg px-1 py-1 hover:bg-slate-50 w-10 h-9"
+                                {/* Button: Add to Portfolio (Plus) */}
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); onAddToPortfolio(etf); }}
+                                    className="w-10 h-9 flex items-center justify-center bg-emerald-100 text-emerald-700 rounded-lg hover:bg-emerald-200 transition-colors border border-emerald-200 shadow-sm"
+                                    title="加入自組月配"
                                 >
-                                    <BarChart3 className="w-4 h-4 text-slate-600" />
-                                    <span className="text-[9px] text-slate-600 font-light leading-none mt-0.5">圖表</span>
+                                    <Plus className="w-5 h-5" />
                                 </button>
                             </div>
                          </div>
 
-                         {/* Row 3: 佈局優化 (Grid 改為 [32% 22% 30% 16%]) */}
+                         {/* Row 3: Base Price / Est Yield / Total Return / Detail Button */}
                          <div className="grid grid-cols-[32%_22%_30%_16%] items-center gap-0 bg-white/40 -mx-2 px-2 py-1.5 rounded-b-lg mt-0.5 leading-tight divide-x divide-slate-200/60">
                             <div className="text-left flex flex-col px-1">
                                 <span className="text-[10px] font-light text-slate-500 mb-0.5">起始股價</span>
-                                <span className="text-[16px] font-medium text-slate-700 leading-none">{etf.priceBase}</span>
+                                <span className="text-[16px] font-light text-slate-700 leading-none">{etf.priceBase}</span>
                             </div>
                             <div className="text-center flex flex-col px-1">
                                 <span className="text-[10px] font-light text-slate-500 mb-0.5">預估殖利率</span>
-                                <span className="text-[16px] font-medium text-slate-700 leading-none">{estYieldDisplay}</span>
+                                <span className="text-[16px] font-light text-slate-700 leading-none">{estYieldDisplay}</span>
                             </div>
-                            {/* 調整：含息報酬靠右對齊 (text-right) */}
                             <div className="text-right flex flex-col px-1 pr-2">
                                 <span className="text-[10px] font-light text-slate-500 mb-0.5">含息報酬</span>
-                                <span className={`text-[16px] font-medium leading-none ${etf.totalReturn >= 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                <span className={`text-[16px] font-light leading-none ${etf.totalReturn >= 0 ? 'text-red-600' : 'text-green-600'}`}>
                                     {etf.totalReturn}%
                                 </span>
                             </div>
                             <div className="text-right flex justify-end px-1">
-                                {/* Button g: Detail - 純圖示按鈕 (CircleAlert) */}
+                                {/* Button: Detail (CircleAlert) */}
                                 <button 
-                                    onClick={() => setSelectedEtf(etf)}
+                                    onClick={(e) => { e.stopPropagation(); setSelectedEtf(etf); }}
                                     className="w-10 h-9 flex items-center justify-center bg-white/60 text-slate-700 rounded-lg hover:bg-white hover:text-black transition-colors border border-black/10 shadow-sm"
+                                    title="詳細資料"
                                 >
                                      <CircleAlert className="w-5 h-5" />
                                 </button>

@@ -19,6 +19,13 @@ interface FormState {
     totalAmount: string;
 }
 
+// 用於顯示灰色底色的列表 (國際、無配息、年配、半年配、特定主動型)
+// 保持與 AnalysisView 一致
+const GRAY_CODES = [
+    '00645', '00646', '00662', '00757', '00762', '00830', '00885', '00893', '00895', '00909', '00910', '00911',
+    '00981A', '00983A', '00986A'
+];
+
 // --- Helpers ---
 
 const formatMoney = (val: number) => Math.round(val).toLocaleString('en-US');
@@ -113,6 +120,10 @@ const getDividendMonths = (category: string, code: string): number[] => {
 
 // 母表 (主卡片) 樣式 - 淺色
 const getCardStyle = (etf: EtfData) => {
+    if (GRAY_CODES.includes(etf.code)) {
+        return 'bg-slate-100 border-slate-300';
+    }
+
     let type = etf.category;
     if (etf.category === 'AE') {
         type = getBondType(etf.code) as any;
@@ -128,6 +139,10 @@ const getCardStyle = (etf: EtfData) => {
 
 // 子表 (展開區) 樣式 - 加深色 (Darker)
 const getChildStyle = (etf: EtfData) => {
+    if (GRAY_CODES.includes(etf.code)) {
+        return 'bg-slate-200 border-slate-400';
+    }
+
     let type = etf.category;
     if (etf.category === 'AE') {
         type = getBondType(etf.code) as any;
@@ -371,14 +386,28 @@ const PortfolioView: React.FC<Props> = ({ portfolio, onUpdateTransaction, onDele
         });
 
         // F. 本日績效分析 (計算當日漲跌)
-        // 邏輯: 使用歷史股價中最新的那筆 (非今日) 作為昨日收盤價。若無歷史，則用 Base Price。
+        // 邏輯: 尋找歷史股價中，非今天的最新一筆作為昨日收盤價。
+        // 若歷史股價最後一筆的日期 == 當前資料日期 (或今天)，則取倒數第二筆。
+        // 若無歷史，則用 Base Price。
         let prevPrice = item.etf.priceBase;
         const history = item.etf.priceHistory || [];
+        
         if (history.length > 0) {
             // 排序日期 (小->大)
             const sortedHistory = [...history].sort((a,b) => parseDateSimple(a.date) - parseDateSimple(b.date));
-            // 取最後一筆作為前日收盤價 (假設 PriceCurrent 是今日最新)
-            prevPrice = sortedHistory[sortedHistory.length - 1].price;
+            const lastRecord = sortedHistory[sortedHistory.length - 1];
+            
+            // 如果最新歷史資料的價格 == 目前價格，且歷史資料超過1筆，則取前一筆當作昨日收盤
+            // 這是假設 priceCurrent 已經被寫入 history，或者 priceCurrent 與 history 最後一筆同步
+            if (lastRecord.price === item.etf.priceCurrent && sortedHistory.length > 1) {
+                 prevPrice = sortedHistory[sortedHistory.length - 2].price;
+            } else if (lastRecord.price !== item.etf.priceCurrent) {
+                 // 若不相等，代表 priceCurrent 是更新的，lastRecord 是昨日
+                 prevPrice = lastRecord.price;
+            } else {
+                 // 若相等且只有一筆，只好用 Base Price (或維持 0 漲跌)
+                 // 但若有 Base Price 且 Base != Current，也許可以用 Base
+            }
         }
 
         const changePrice = item.etf.priceCurrent - prevPrice;
@@ -417,7 +446,7 @@ const PortfolioView: React.FC<Props> = ({ portfolio, onUpdateTransaction, onDele
             });
         }
 
-        // B. 股息收益累積 (修正：需判斷除息日是否 <= 今天)
+        // B. 股息收益累積
         let itemAccumulatedDividend = 0;
         const dividends = item.etf.dividends || [];
         
@@ -425,9 +454,6 @@ const PortfolioView: React.FC<Props> = ({ portfolio, onUpdateTransaction, onDele
             const txDateVal = parseDateSimple(tx.date);
             dividends.forEach(d => {
                 const dDateVal = parseDateSimple(d.date);
-                // 邏輯修正：
-                // 1. 除息日 (d.date) 必須在買入日 (tx.date) 之後或當天。
-                // 2. 除息日 (d.date) 必須已經發生 (<= 今天)，排除未來的除息。
                 if (dDateVal >= txDateVal && dDateVal <= todayTime) {
                     const amount = d.amount * tx.shares;
                     itemAccumulatedDividend += amount;

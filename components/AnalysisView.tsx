@@ -32,8 +32,13 @@ const CATEGORY_MAPPING: Record<string, string[]> = {
   // '月配' 與 '債券' 直接透過 CategoryKey 判斷
 };
 
-// 用於顯示灰色底色的國際型與無配息商品
-const GRAY_CODES = ['00645', '00646', '00662', '00757', '00762', '00830', '00885', '00893', '00895', '00909', '00910', '00911'];
+// 用於顯示灰色底色的列表 (國際、無配息、年配、半年配、特定主動型)
+const GRAY_CODES = [
+    // 國際/海外
+    '00645', '00646', '00662', '00757', '00762', '00830', '00885', '00893', '00895', '00909', '00910', '00911',
+    // 指定主動型/無配息/年配
+    '00981A', '00983A', '00986A'
+];
 
 // 輔助：判斷是否為未來日期
 const isFutureDate = (dateStr: string) => {
@@ -105,7 +110,7 @@ const formatDate = (dateStr: string): string => {
 
 // 輔助：取得卡片顏色樣式 (更新邏輯)
 const getCardStyle = (etf: EtfData) => {
-    // 1. 特殊名單：國際/無配息 -> 淡灰色
+    // 1. 特殊名單：國際/無配息/年配/半年配/指定主動 -> 淡灰色
     if (GRAY_CODES.includes(etf.code)) {
         return 'bg-slate-100 border-slate-300';
     }

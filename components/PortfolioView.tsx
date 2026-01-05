@@ -133,7 +133,7 @@ const getCardStyle = (etf: EtfData) => {
         case 'AB': return 'bg-emerald-50 border-emerald-200'; // 季二: 淡綠
         case 'AC': return 'bg-orange-50 border-orange-200';  // 季三: 淡橘
         case 'AD': return 'bg-amber-50 border-amber-200';    // 月配: 茶色(淡琥珀)
-        default: return 'bg-white border-slate-200';
+        default: return 'bg-slate-100 border-slate-300'; // AF (其他/無配息)
     }
 };
 
@@ -152,7 +152,7 @@ const getChildStyle = (etf: EtfData) => {
         case 'AB': return 'bg-emerald-100 border-emerald-300'; // 季二 (深一點)
         case 'AC': return 'bg-orange-100 border-orange-300';  // 季三 (深一點)
         case 'AD': return 'bg-[#eaddcf] border-[#d4c5b0]';    // 月配 (茶色加深, 近似拿鐵色)
-        default: return 'bg-slate-100 border-slate-300';
+        default: return 'bg-slate-200 border-slate-400';
     }
 };
 
@@ -192,25 +192,32 @@ const PortfolioView: React.FC<Props> = ({ portfolio, onUpdateTransaction, onDele
   const [selectedEtf, setSelectedEtf] = useState<EtfData | null>(null);
   const [chartEtf, setChartEtf] = useState<EtfData | null>(null);
 
-  // Sorting Logic: 1. Period (AD->AA->AB->AC) 2. Code
+  // Sorting Logic: 1. Period (AD->AA->AB->AC->AF) 2. Code
   const sortedPortfolio = useMemo(() => {
     return [...portfolio].sort((a, b) => {
         const getRank = (code: string, category: string) => {
             let type = category;
-            if (type === 'AE') type = getBondType(code);
             
-            // Monthly bonds should be treated as Monthly (AD)
+            // 債券重新歸類
+            if (type === 'AE') {
+                type = getBondType(code) as any;
+            }
+            
+            // 強制月配判斷 (部分可能未被分類到的)
             const monthlyBonds = ['00937B', '00772B', '00933B', '00773B'];
             if (monthlyBonds.some(x => code.includes(x))) type = 'AD';
 
-             // Monthly stocks
             const monthlyCodes = ['00929','00939','00940','00934','00936','00943','00944','00946','00952','00961'];
             if (monthlyCodes.some(x => code.includes(x))) type = 'AD';
 
-            if (type === 'AD') return 0;
-            if (type === 'AA') return 1;
-            if (type === 'AB') return 2;
-            return 3;
+            switch (type) {
+                case 'AD': return 0; // 月配 (優先)
+                case 'AA': return 1; // 季一
+                case 'AB': return 2; // 季二
+                case 'AC': return 3; // 季三
+                case 'AF': return 4; // 其他 (半年/年/無)
+                default: return 5;
+            }
         };
 
         const rankA = getRank(a.id, a.etf.category);

@@ -707,7 +707,7 @@ const App: React.FC = () => {
                 onClick={() => setShowBetaModal(true)}
                 className="text-[13px] font-bold text-yellow-300 tracking-wider border border-yellow-400/30 px-2 py-1 rounded bg-yellow-400/10 whitespace-nowrap hover:bg-yellow-400/20 transition-colors cursor-pointer active:scale-95"
             >
-                測試版
+                版本:V01.0
             </button>
         </div>
       </header>

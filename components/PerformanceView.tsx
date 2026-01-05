@@ -16,6 +16,7 @@ const CATEGORY_CONFIG: { key: CategoryKey; label: string }[] = [
   { key: 'AC', label: '季三' },
   { key: 'AD', label: '月配' },
   { key: 'AE', label: '債券' },
+  { key: 'AF', label: '其他' }, // 新增 AF 其他分類
 ];
 
 // 使用者指定的債券排序列表
@@ -122,6 +123,7 @@ const PerformanceView: React.FC<Props> = ({ etfs, onAddToPortfolio, lastUpdated 
         case 'AB': return 'bg-emerald-50 border-emerald-200';
         case 'AC': return 'bg-orange-50 border-orange-200';
         case 'AD': return 'bg-amber-50 border-amber-200';
+        case 'AF': return 'bg-slate-100 border-slate-300'; // 其他分類: 淡灰色
         default: return 'bg-white border-slate-200';
     }
   };

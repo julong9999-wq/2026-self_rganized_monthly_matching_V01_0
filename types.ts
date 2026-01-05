@@ -8,7 +8,7 @@ export interface SheetData {
   errorMsg?: string;
 }
 
-export type CategoryKey = 'AA' | 'AB' | 'AC' | 'AD' | 'AE';
+export type CategoryKey = 'AA' | 'AB' | 'AC' | 'AD' | 'AE' | 'AF';
 
 export interface EtfData {
   code: string;           // 代號 (0056)

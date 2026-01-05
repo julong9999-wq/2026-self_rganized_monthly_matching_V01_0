@@ -149,7 +149,9 @@ const PerformanceView: React.FC<Props> = ({ etfs, onAddToPortfolio, lastUpdated 
       }
       // 3. 判斷 AF (無配息/半年/年配)
       else {
-          const noDivCodes = ['00757', '00893', '00895', '00909', '00762', '00910', '00911'];
+          // 已知無配息名單 (00757 FANG+, 00893 電動車, 00895 未來車)
+          // 移除 00909, 00911, 00762, 00910，讓它們視為年配 (1次)
+          const noDivCodes = ['00757', '00893', '00895'];
           const semiAnnualCodes = ['0050', '006208', '00692'];
           
           if (noDivCodes.some(c => selectedEtf.code.includes(c))) {

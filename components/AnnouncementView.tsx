@@ -7,7 +7,7 @@ interface Props {
   etfs: EtfData[];
 }
 
-type FilterType = 'quarterly' | 'monthly' | 'bond';
+type FilterType = 'quarterly' | 'monthly' | 'bond' | 'other';
 
 // Date Parsing Helper (與 PerformanceView 保持一致)
 const getDateValue = (dateStr: string): number => {
@@ -86,6 +86,10 @@ const AnnouncementView: React.FC<Props> = ({ etfs }) => {
               // 季配股票 (AA, AB, AC)
               return ['AA', 'AB', 'AC'].includes(item.category);
           }
+          if (filter === 'other') {
+              // 其他 (AF: 年配/半年配/其他)
+              return item.category === 'AF';
+          }
           return false;
       });
   }, [upcomingDividends, filter]);
@@ -100,10 +104,10 @@ const AnnouncementView: React.FC<Props> = ({ etfs }) => {
               <h2 className="text-xl font-bold">即將配息公告</h2>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
               <button
                   onClick={() => setFilter('quarterly')}
-                  className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all border ${
+                  className={`flex-1 min-w-[80px] py-3 rounded-xl font-bold text-sm transition-all border whitespace-nowrap ${
                       filter === 'quarterly' 
                       ? 'bg-blue-900 text-white border-blue-900 shadow-md' 
                       : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
@@ -113,7 +117,7 @@ const AnnouncementView: React.FC<Props> = ({ etfs }) => {
               </button>
               <button
                   onClick={() => setFilter('monthly')}
-                  className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all border ${
+                  className={`flex-1 min-w-[80px] py-3 rounded-xl font-bold text-sm transition-all border whitespace-nowrap ${
                       filter === 'monthly' 
                       ? 'bg-amber-500 text-white border-amber-500 shadow-md' 
                       : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
@@ -123,13 +127,23 @@ const AnnouncementView: React.FC<Props> = ({ etfs }) => {
               </button>
               <button
                   onClick={() => setFilter('bond')}
-                  className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all border ${
+                  className={`flex-1 min-w-[80px] py-3 rounded-xl font-bold text-sm transition-all border whitespace-nowrap ${
                       filter === 'bond' 
                       ? 'bg-emerald-600 text-white border-emerald-600 shadow-md' 
                       : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
                   }`}
               >
                   債券型
+              </button>
+              <button
+                  onClick={() => setFilter('other')}
+                  className={`flex-1 min-w-[80px] py-3 rounded-xl font-bold text-sm transition-all border whitespace-nowrap ${
+                      filter === 'other' 
+                      ? 'bg-slate-600 text-white border-slate-600 shadow-md' 
+                      : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
+                  }`}
+              >
+                  其他
               </button>
           </div>
       </div>

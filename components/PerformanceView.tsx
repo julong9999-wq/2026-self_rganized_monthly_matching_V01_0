@@ -130,25 +130,50 @@ const PerformanceView: React.FC<Props> = ({ etfs, onAddToPortfolio, lastUpdated 
 
   // --- 詳細資料頁面 (g. 詳細資料) ---
   if (selectedEtf) {
-      // 判斷是否為月配：AD 類別 或 債券(AE)中的月配
-      let resolvedCategory = selectedEtf.category;
-      if (resolvedCategory === 'AE') {
-          resolvedCategory = getBondType(selectedEtf.code);
-      }
-      
-      const isMonthly = resolvedCategory === 'AD';
-      const baseLimit = isMonthly ? 12 : 4; // 月配 12 筆，季配 4 筆
+      // 設定顯示筆數邏輯
+      let limit = 1;
+      let labelText = '年配';
 
-      // 排序：近 -> 遠 (數值比對，確保 12月 > 11月 > 1月)
+      // 1. 判斷月配 (AD 或 月配債)
+      const monthlyBonds = ['00937B', '00772B', '00933B', '00773B'];
+      const isMonthly = selectedEtf.category === 'AD' || monthlyBonds.some(b => selectedEtf.code.includes(b));
+      
+      if (isMonthly) {
+          limit = 12;
+          labelText = '月配';
+      } 
+      // 2. 判斷季配 (AA, AB, AC)
+      else if (['AA', 'AB', 'AC'].includes(selectedEtf.category)) {
+          limit = 4;
+          labelText = '季配';
+      }
+      // 3. 判斷 AF (無配息/半年/年配)
+      else {
+          const noDivCodes = ['00757', '00893', '00895', '00909', '00762', '00910', '00911'];
+          const semiAnnualCodes = ['0050', '006208', '00692'];
+          
+          if (noDivCodes.some(c => selectedEtf.code.includes(c))) {
+              limit = 0;
+              labelText = '無配息';
+          } else if (semiAnnualCodes.some(c => selectedEtf.code.includes(c))) {
+              limit = 2;
+              labelText = '半年配';
+          } else {
+              limit = 1; // 預設年配
+              labelText = '年配';
+          }
+      }
+
+      // 排序：近 -> 遠
       const allSortedDividends = [...selectedEtf.dividends].sort((a, b) => {
            return getDateValue(b.date) - getDateValue(a.date);
       });
 
       // h. 配息資料如有 預計配息資料 (未來日期) 筆數需 N+1 筆
       const hasFuture = allSortedDividends.length > 0 && isFutureDate(allSortedDividends[0].date);
-      const displayCount = hasFuture ? baseLimit + 1 : baseLimit;
+      const displayCount = hasFuture ? limit + 1 : limit;
       
-      const displayDividends = allSortedDividends.slice(0, displayCount);
+      const displayDividends = limit === 0 ? [] : allSortedDividends.slice(0, displayCount);
 
       return (
           <div className={`flex flex-col h-full ${getCardStyle(selectedEtf).split(' ')[0]}`}>
@@ -160,7 +185,7 @@ const PerformanceView: React.FC<Props> = ({ etfs, onAddToPortfolio, lastUpdated 
                   <div className="flex-1">
                       <h2 className="text-lg font-bold text-slate-800">{selectedEtf.code} {selectedEtf.name}</h2>
                       <span className="text-xs text-slate-500">
-                          {isMonthly ? '近 12 次配息 (月配)' : '近 4 次配息 (季配)'}
+                          {limit === 0 ? '無配息商品' : `近 ${limit} 次配息 (${labelText})`}
                       </span>
                   </div>
               </div>

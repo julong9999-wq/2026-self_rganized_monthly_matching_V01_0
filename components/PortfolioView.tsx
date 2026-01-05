@@ -674,15 +674,49 @@ const PortfolioView: React.FC<Props> = ({ portfolio, onUpdateTransaction, onDele
   const renderDetailModal = () => {
       if (!selectedEtf) return null;
       const cardColorClass = getCardStyle(selectedEtf).split(' ')[0];
-      let isMonthly = selectedEtf.category === 'AD';
-      if (selectedEtf.category === 'AE') {
-          const monthlyBonds = ['00937B', '00772B', '00933B', '00773B'];
-          if (monthlyBonds.some(b => selectedEtf.code.includes(b))) isMonthly = true;
+      
+      // 設定顯示筆數邏輯
+      let limit = 1;
+      let labelText = '年配';
+
+      // 1. 判斷月配 (AD 或 月配債)
+      const monthlyBonds = ['00937B', '00772B', '00933B', '00773B'];
+      const isMonthly = selectedEtf.category === 'AD' || monthlyBonds.some(b => selectedEtf.code.includes(b));
+      
+      if (isMonthly) {
+          limit = 12;
+          labelText = '月配';
+      } 
+      // 2. 判斷季配 (AA, AB, AC)
+      else if (['AA', 'AB', 'AC'].includes(selectedEtf.category)) {
+          limit = 4;
+          labelText = '季配';
       }
-      const count = isMonthly ? 12 : 4;
-      const allDivs = [...selectedEtf.dividends].sort((a, b) => getDateValue(b.date) - getDateValue(a.date));
-      const hasFuture = allDivs.length > 0 && isFutureDate(allDivs[0].date);
-      const displayDivs = allDivs.slice(0, hasFuture ? count + 1 : count);
+      // 3. 判斷 AF (無配息/半年/年配)
+      else {
+          const noDivCodes = ['00757', '00893', '00895', '00909', '00762', '00910', '00911'];
+          const semiAnnualCodes = ['0050', '006208', '00692'];
+          
+          if (noDivCodes.some(c => selectedEtf.code.includes(c))) {
+              limit = 0;
+              labelText = '無配息';
+          } else if (semiAnnualCodes.some(c => selectedEtf.code.includes(c))) {
+              limit = 2;
+              labelText = '半年配';
+          } else {
+              limit = 1; // 預設年配
+              labelText = '年配';
+          }
+      }
+
+      // 排序配息：近 -> 遠
+      const allSortedDividends = [...selectedEtf.dividends].sort((a, b) => getDateValue(b.date) - getDateValue(a.date));
+      
+      // 檢查是否有未來配息
+      const hasFuture = allSortedDividends.length > 0 && isFutureDate(allSortedDividends[0].date);
+      const displayCount = hasFuture ? limit + 1 : limit;
+      
+      const displayDividends = limit === 0 ? [] : allSortedDividends.slice(0, displayCount);
 
       return (
         <div className={`fixed inset-0 z-50 flex flex-col ${cardColorClass} animate-[slideIn_0.2s_ease-out]`}>
@@ -692,7 +726,9 @@ const PortfolioView: React.FC<Props> = ({ portfolio, onUpdateTransaction, onDele
                   </button>
                   <div className="flex-1">
                       <h2 className="text-lg font-bold text-slate-800">{selectedEtf.code} {selectedEtf.name}</h2>
-                      <span className="text-xs text-slate-500">{isMonthly ? '近 12 次配息 (月配)' : '近 4 次配息 (季配)'}</span>
+                      <span className="text-xs text-slate-500">
+                          {limit === 0 ? '無配息商品' : `近 ${limit} 次配息 (${labelText})`}
+                      </span>
                   </div>
             </div>
             <div className="flex-1 overflow-y-auto p-4 scrollbar-hide">
@@ -707,8 +743,8 @@ const PortfolioView: React.FC<Props> = ({ portfolio, onUpdateTransaction, onDele
                             </tr>
                         </thead>
                         <tbody>
-                             {displayDivs.length > 0 ? (
-                                displayDivs.map((div, idx) => {
+                             {displayDividends.length > 0 ? (
+                                displayDividends.map((div, idx) => {
                                     const isFuture = isFutureDate(div.date);
                                     const yieldVal = selectedEtf.priceCurrent > 0 ? ((div.amount / selectedEtf.priceCurrent) * 100).toFixed(2) : "0.00";
                                     return (

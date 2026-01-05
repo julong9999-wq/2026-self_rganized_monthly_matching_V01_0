@@ -31,7 +31,7 @@ const CATEGORY_MAPPING: Record<string, string[]> = {
   '國外': ['00908', '00956', '00960', '00771', '00712', '00972'],
   // 修正：國際型 (共 12 檔)
   '國際': ['00645', '00646', '00662', '00757', '00762', '00830', '00885', '00893', '00895', '00909', '00910', '00911'],
-  // '月配' 與 '債券' 直接透過 CategoryKey 判斷
+  // '月配' 與 '債券' 直接透過 CategoryKey判斷
 };
 
 // 用於顯示灰色底色的列表 (國際、無配息、年配、半年配、特定主動型)
@@ -317,23 +317,48 @@ const AnalysisView: React.FC<Props> = ({ etfs, lastUpdated, onAddToPortfolio }) 
 
       const cardColorClass = getCardStyle(selectedEtf).split(' ')[0]; // 只取 bg color
       
-      // 判斷月配/季配
-      // 若是債券，需判斷是否為月配債
-      let isMonthly = selectedEtf.category === 'AD';
-      if (selectedEtf.category === 'AE') {
-          const monthlyBonds = ['00937B', '00772B', '00933B', '00773B'];
-          if (monthlyBonds.some(b => selectedEtf.code.includes(b))) isMonthly = true;
-      }
+      // 設定顯示筆數邏輯
+      let limit = 1;
+      let labelText = '年配';
+
+      // 1. 判斷月配 (AD 或 月配債)
+      const monthlyBonds = ['00937B', '00772B', '00933B', '00773B'];
+      const isMonthly = selectedEtf.category === 'AD' || monthlyBonds.some(b => selectedEtf.code.includes(b));
       
-      const count = isMonthly ? 12 : 4;
+      if (isMonthly) {
+          limit = 12;
+          labelText = '月配';
+      } 
+      // 2. 判斷季配 (AA, AB, AC)
+      else if (['AA', 'AB', 'AC'].includes(selectedEtf.category)) {
+          limit = 4;
+          labelText = '季配';
+      }
+      // 3. 判斷 AF (無配息/半年/年配)
+      else {
+          const noDivCodes = ['00757', '00893', '00895', '00909', '00762', '00910', '00911'];
+          const semiAnnualCodes = ['0050', '006208', '00692'];
+          
+          if (noDivCodes.some(c => selectedEtf.code.includes(c))) {
+              limit = 0;
+              labelText = '無配息';
+          } else if (semiAnnualCodes.some(c => selectedEtf.code.includes(c))) {
+              limit = 2;
+              labelText = '半年配';
+          } else {
+              limit = 1; // 預設年配
+              labelText = '年配';
+          }
+      }
 
       // 排序配息：近 -> 遠
-      const allDivs = [...selectedEtf.dividends].sort((a, b) => getDateValue(b.date) - getDateValue(a.date));
+      const allSortedDividends = [...selectedEtf.dividends].sort((a, b) => getDateValue(b.date) - getDateValue(a.date));
       
       // 檢查是否有未來配息
-      const hasFuture = allDivs.length > 0 && isFutureDate(allDivs[0].date);
-      const displayCount = hasFuture ? count + 1 : count;
-      const displayDivs = allDivs.slice(0, displayCount);
+      const hasFuture = allSortedDividends.length > 0 && isFutureDate(allSortedDividends[0].date);
+      const displayCount = hasFuture ? limit + 1 : limit;
+      
+      const displayDividends = limit === 0 ? [] : allSortedDividends.slice(0, displayCount);
 
       return (
         <div className={`fixed inset-0 z-50 flex flex-col ${cardColorClass} animate-[slideIn_0.2s_ease-out]`}>
@@ -345,7 +370,7 @@ const AnalysisView: React.FC<Props> = ({ etfs, lastUpdated, onAddToPortfolio }) 
                   <div className="flex-1">
                       <h2 className="text-lg font-bold text-slate-800">{selectedEtf.code} {selectedEtf.name}</h2>
                       <span className="text-xs text-slate-500">
-                          {isMonthly ? '近 12 次配息 (月配)' : '近 4 次配息 (季配)'}
+                          {limit === 0 ? '無配息商品' : `近 ${limit} 次配息 (${labelText})`}
                       </span>
                   </div>
             </div>
@@ -363,8 +388,8 @@ const AnalysisView: React.FC<Props> = ({ etfs, lastUpdated, onAddToPortfolio }) 
                             </tr>
                         </thead>
                         <tbody>
-                             {displayDivs.length > 0 ? (
-                                displayDivs.map((div, idx) => {
+                             {displayDividends.length > 0 ? (
+                                displayDividends.map((div, idx) => {
                                     const isFuture = isFutureDate(div.date);
                                     const yieldVal = selectedEtf.priceCurrent > 0 
                                         ? ((div.amount / selectedEtf.priceCurrent) * 100).toFixed(2) 

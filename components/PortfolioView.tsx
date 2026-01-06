@@ -399,22 +399,20 @@ const PortfolioView: React.FC<Props> = ({ portfolio, onUpdateTransaction, onDele
         let prevPrice = item.etf.priceBase;
         const history = item.etf.priceHistory || [];
         
-        if (history.length > 0) {
+        // 修正邏輯: 不再比較價格，而是直接取倒數第二筆 (假設最後一筆是最新價)
+        if (history.length >= 2) {
             // 排序日期 (小->大)
             const sortedHistory = [...history].sort((a,b) => parseDateSimple(a.date) - parseDateSimple(b.date));
-            const lastRecord = sortedHistory[sortedHistory.length - 1];
-            
-            // 如果最新歷史資料的價格 == 目前價格，且歷史資料超過1筆，則取前一筆當作昨日收盤
-            // 這是假設 priceCurrent 已經被寫入 history，或者 priceCurrent 與 history 最後一筆同步
-            if (lastRecord.price === item.etf.priceCurrent && sortedHistory.length > 1) {
-                 prevPrice = sortedHistory[sortedHistory.length - 2].price;
-            } else if (lastRecord.price !== item.etf.priceCurrent) {
-                 // 若不相等，代表 priceCurrent 是更新的，lastRecord 是昨日
-                 prevPrice = lastRecord.price;
-            } else {
-                 // 若相等且只有一筆，只好用 Base Price (或維持 0 漲跌)
-                 // 但若有 Base Price 且 Base != Current，也許可以用 Base
-            }
+            // 取倒數第二筆 (昨日收盤)
+            prevPrice = sortedHistory[sortedHistory.length - 2].price;
+        } else if (history.length === 1) {
+             // 只有一筆 (今日)，嘗試使用 priceBase (如果有)
+             if (item.etf.priceBase > 0 && item.etf.priceBase !== history[0].price) {
+                 prevPrice = item.etf.priceBase;
+             } else {
+                 // 真的沒資料，漲跌設為 0
+                 prevPrice = history[0].price;
+             }
         }
 
         const changePrice = item.etf.priceCurrent - prevPrice;
@@ -1277,10 +1275,10 @@ const PortfolioView: React.FC<Props> = ({ portfolio, onUpdateTransaction, onDele
                                                 <span className="text-[16px] font-light text-slate-700">{formatShare(row.shares)}</span>
                                             </div>
                                         </div>
-                                        {/* Row 2: 漲跌 / 漲跌金額 (粗字 16px) */}
+                                        {/* Row 2: 漲跌值 / 漲跌金額 (粗字 16px) */}
                                         <div className="flex justify-between items-center mt-2 pt-2 border-t border-slate-200/50">
                                             <div className="flex flex-col">
-                                                <span className="text-[12px] font-light text-slate-500 mb-0.5">漲跌</span>
+                                                <span className="text-[12px] font-light text-slate-500 mb-0.5">漲跌值</span>
                                                 <span className={`text-[16px] font-bold ${getColor(row.changePrice)}`}>
                                                     {row.changePrice > 0 ? '+' : ''}{row.changePrice.toFixed(2)}
                                                 </span>

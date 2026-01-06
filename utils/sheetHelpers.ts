@@ -231,14 +231,28 @@ export const parseEtfData = (csvContent: string): EtfData[] => {
   const idxMarket = findCol(['上市/ 上櫃', '市場', 'market', '類別', '上市', '上櫃', 'type', '掛牌']); 
   
   // --- 2. Dynamic Price Column Detection ---
-  // 修改：捕捉所有日期欄位作為歷史數據
+  // 修改：捕捉所有日期欄位作為歷史數據，並特別處理 "NOW()-1"
   const dateColIndices = header.map((h, index) => {
       // Matches YYYY/MM/DD, YYYY-MM-DD, MM/DD, YYYYMM (6 digits), YYYY/MM (for monthly data)
       const isDate = /(\d{1,4}[-./]\d{1,2}[-./]\d{1,2})|(\d{1,2}[-./]\d{1,2})|(\d{4}[-./]\d{1,2})/.test(h) || /^\d{6}$/.test(h.replace(/\//g,''));
       
-      if (isDate) {
-          const originalHeader = parseCSVRow(lines[headerRowIndex])[index];
-          return { index, text: originalHeader.trim() };
+      // 特別偵測 "NOW()-1" 標題
+      const isYesterdayKey = h.includes('now()-1') || h.includes('now() - 1');
+
+      if (isDate || isYesterdayKey) {
+          let label = parseCSVRow(lines[headerRowIndex])[index].trim();
+          
+          // 如果是 "NOW()-1"，將標籤轉換為昨天的實際日期字串，方便後續排序邏輯
+          if (isYesterdayKey && !isDate) {
+               const d = new Date();
+               d.setDate(d.getDate() - 1);
+               const yyyy = d.getFullYear();
+               const mm = (d.getMonth() + 1).toString().padStart(2, '0');
+               const dd = d.getDate().toString().padStart(2, '0');
+               label = `${yyyy}/${mm}/${dd}`;
+          }
+
+          return { index, text: label };
       }
       return null;
   }).filter((item): item is { index: number, text: string } => item !== null);
@@ -247,7 +261,6 @@ export const parseEtfData = (csvContent: string): EtfData[] => {
   let currentPriceDateLabel = '';
 
   // 排序日期欄位 (假設越後面的欄位日期越新)
-  // 如果能解析日期值會更好，這裡假設表格是由左至右為舊到新
   if (dateColIndices.length > 0) {
       const lastDateCol = dateColIndices[dateColIndices.length - 1];
       idxPriceCurrent = lastDateCol.index;

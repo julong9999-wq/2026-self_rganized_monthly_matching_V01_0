@@ -393,26 +393,32 @@ const PortfolioView: React.FC<Props> = ({ portfolio, onUpdateTransaction, onDele
         });
 
         // F. 本日績效分析 (計算當日漲跌)
-        // 邏輯: 尋找歷史股價中，非今天的最新一筆作為昨日收盤價。
-        // 若歷史股價最後一筆的日期 == 當前資料日期 (或今天)，則取倒數第二筆。
-        // 若無歷史，則用 Base Price。
+        // 修正邏輯: 智慧比對 Current Price 與 History Last Price 來決定「昨日收盤」
         let prevPrice = item.etf.priceBase;
         const history = item.etf.priceHistory || [];
         
-        // 修正邏輯: 不再比較價格，而是直接取倒數第二筆 (假設最後一筆是最新價)
-        if (history.length >= 2) {
+        if (history.length > 0) {
             // 排序日期 (小->大)
             const sortedHistory = [...history].sort((a,b) => parseDateSimple(a.date) - parseDateSimple(b.date));
-            // 取倒數第二筆 (昨日收盤)
-            prevPrice = sortedHistory[sortedHistory.length - 2].price;
-        } else if (history.length === 1) {
-             // 只有一筆 (今日)，嘗試使用 priceBase (如果有)
-             if (item.etf.priceBase > 0 && item.etf.priceBase !== history[0].price) {
-                 prevPrice = item.etf.priceBase;
-             } else {
-                 // 真的沒資料，漲跌設為 0
-                 prevPrice = history[0].price;
-             }
+            const lastHistoryItem = sortedHistory[sortedHistory.length - 1];
+
+            // 如果「目前股價」等於「歷史資料最後一筆」，代表歷史資料已經包含今日，所以昨日收盤是倒數第二筆
+            if (lastHistoryItem.price === item.etf.priceCurrent) {
+                if (sortedHistory.length >= 2) {
+                    prevPrice = sortedHistory[sortedHistory.length - 2].price;
+                } else {
+                    // 只有一筆歷史且等於今日，嘗試用 Base Price (如果不等於今日)
+                    if (item.etf.priceBase > 0 && item.etf.priceBase !== item.etf.priceCurrent) {
+                        prevPrice = item.etf.priceBase;
+                    } else {
+                        // 真的沒比較值，漲跌為 0
+                        prevPrice = item.etf.priceCurrent;
+                    }
+                }
+            } else {
+                // 如果「目前股價」不等於「歷史資料最後一筆」，代表歷史資料最後一筆是「昨日收盤」
+                prevPrice = lastHistoryItem.price;
+            }
         }
 
         const changePrice = item.etf.priceCurrent - prevPrice;
@@ -424,7 +430,8 @@ const PortfolioView: React.FC<Props> = ({ portfolio, onUpdateTransaction, onDele
             name: item.etf.name,
             shares: totalShares,
             changePrice: changePrice,
-            changeValue: changeValue
+            changeValue: changeValue,
+            prevPrice: prevPrice // 儲存昨日收盤價以便顯示
         });
 
         // E. 檢查本月除息
@@ -1279,9 +1286,14 @@ const PortfolioView: React.FC<Props> = ({ portfolio, onUpdateTransaction, onDele
                                         <div className="flex justify-between items-center mt-2 pt-2 border-t border-slate-200/50">
                                             <div className="flex flex-col">
                                                 <span className="text-[12px] font-light text-slate-500 mb-0.5">漲跌值</span>
-                                                <span className={`text-[16px] font-bold ${getColor(row.changePrice)}`}>
-                                                    {row.changePrice > 0 ? '+' : ''}{row.changePrice.toFixed(2)}
-                                                </span>
+                                                <div className="flex items-baseline gap-1">
+                                                    <span className={`text-[16px] font-bold ${getColor(row.changePrice)}`}>
+                                                        {row.changePrice > 0 ? '+' : ''}{row.changePrice.toFixed(2)}
+                                                    </span>
+                                                    <span className="text-[10px] text-slate-400 font-light">
+                                                        (昨收: {formatPrice(row.prevPrice)})
+                                                    </span>
+                                                </div>
                                             </div>
                                             <div className="flex flex-col text-right">
                                                 <span className="text-[12px] font-light text-slate-500 mb-0.5">漲跌金額</span>

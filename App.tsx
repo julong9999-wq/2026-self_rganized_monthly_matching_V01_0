@@ -29,6 +29,13 @@ const CACHE_KEY_TIME = 'sheet_last_fetch_time_v6';
 const CACHE_KEY_PORTFOLIO = 'user_portfolio_v1'; // 新增 Portfolio 儲存 Key
 const CACHE_DURATION = 15 * 60 * 1000; // 15 分鐘
 
+// 半年配名單 (用於 App 邏輯計算次數)
+const SEMI_ANNUAL_CODES = [
+    '0050', '006203', '00702', '00733', '00735', '00736', 
+    '00858', '00882', '00913', '00922', '00923', '00928', '00935',
+    '006208', '00692', '00911' // 包含原本已知或特殊的半年配
+];
+
 const App: React.FC = () => {
   // App State
   const [isConfigured, setIsConfigured] = useState(false);
@@ -205,17 +212,13 @@ const App: React.FC = () => {
     // 3. 其他 (AF) - 判斷無配息、半年配、年配
     if (category === 'AF') {
         // 已知無配息名單 (00757 FANG+, 00893 電動車, 00895 未來車)
-        // 移除 00909, 00911, 00762, 00910，讓它們視為年配 (1次)
-        const noDivCodes = [
-            '00757', '00893', '00895'
-        ];
+        const noDivCodes = ['00757', '00893', '00895'];
         if (noDivCodes.some(c => code.includes(c))) return 0;
 
-        // 已知半年配名單 (可持續補充)
-        const semiAnnualCodes = ['0050', '006208', '00692'];
-        if (semiAnnualCodes.some(c => code.includes(c))) return 2;
+        // 半年配名單
+        if (SEMI_ANNUAL_CODES.some(c => code.includes(c))) return 2;
 
-        // 預設年配 -> 1 次 (包含大部分國際型 00646, 00830, 00909, 00911 等)
+        // 預設年配 -> 1 次 (包含大部分國際型 00646, 00830, 00909, 00910 等)
         return 1;
     }
 
@@ -762,7 +765,7 @@ const App: React.FC = () => {
                 onClick={() => setShowBetaModal(true)}
                 className="text-[13px] font-bold text-yellow-300 tracking-wider border border-yellow-400/30 px-2 py-1 rounded bg-yellow-400/10 whitespace-nowrap hover:bg-yellow-400/20 transition-colors cursor-pointer active:scale-95"
             >
-                版本:V01.0
+                版本:V01.1
             </button>
         </div>
       </header>
@@ -784,6 +787,18 @@ const App: React.FC = () => {
                     </button>
                 </div>
                 <div className="p-6 overflow-y-auto space-y-4 text-slate-600 text-base leading-relaxed">
+                    
+                    {/* 版本更新區塊 */}
+                    <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 space-y-2">
+                        <h4 className="font-bold text-blue-900 flex items-center gap-2">
+                            <Megaphone className="w-5 h-5 text-blue-600" /> 版本更新說明 (V01.1)
+                        </h4>
+                        <ul className="list-disc pl-5 space-y-1 text-sm text-blue-800">
+                            <li>增加 <strong>半年配</strong> 商品之 ETF (共 13 檔)。</li>
+                            <li>更新「國際」與「主動」分類清單。</li>
+                        </ul>
+                    </div>
+
                     <p>
                         <strong>「2026 自組月配 投資助理」</strong> 是一個輔助分析工具，旨在協助使用者整合公開資訊與進行試算。
                     </p>

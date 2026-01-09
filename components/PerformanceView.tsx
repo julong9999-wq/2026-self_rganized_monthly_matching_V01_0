@@ -9,14 +9,19 @@ interface Props {
   lastUpdated: Date | null;
 }
 
-// 定義分類配置 (兩字，無 "全部")
-const CATEGORY_CONFIG: { key: CategoryKey; label: string }[] = [
+// 擴展的 Tab 類型，包含原本的 CategoryKey 以及虛擬分類
+type ExtendedCategoryKey = CategoryKey | 'International' | 'Active' | 'Semi';
+
+// 定義分類配置
+const CATEGORY_CONFIG: { key: ExtendedCategoryKey; label: string }[] = [
   { key: 'AA', label: '季一' },
   { key: 'AB', label: '季二' },
   { key: 'AC', label: '季三' },
   { key: 'AD', label: '月配' },
   { key: 'AE', label: '債券' },
-  { key: 'AF', label: '其他' }, // 新增 AF 其他分類
+  { key: 'International', label: '國際' }, // 原本的 AF 改為 國際
+  { key: 'Active', label: '主動' },        // 新增
+  { key: 'Semi', label: '半年' },          // 新增
 ];
 
 // 使用者指定的債券排序列表
@@ -25,6 +30,19 @@ const BOND_SPECIFIC_ORDER = [
   '00720B', '00725B', '00724B',           // 季一
   '00679B', '00761B', '00795B',           // 季二
   '00687B', '00751B', '00792B'            // 季三
+];
+
+// 特殊分類代碼清單
+const INTERNATIONAL_CODES = [
+  '00645', '00646', '00662', '00757', '00762', '00830', '00885', '00893', '00895', '00909', '00910', '00911', '9910'
+];
+
+const ACTIVE_CODES = [
+  '00980A', '00981A', '00982A', '00983A', '00984A', '00985A', '00986A', '00988A', '00989A'
+];
+
+const SEMI_CODES = [
+  '0050', '006203', '00702', '00733', '00735', '00736', '00858', '00882', '00913', '00922', '00923', '00928', '00935'
 ];
 
 // 輔助函式：判斷債券的配息週期類型 (用於顏色與詳細頁配息次數判斷)
@@ -78,15 +96,32 @@ const isFutureDate = (dateStr: string) => {
 };
 
 const PerformanceView: React.FC<Props> = ({ etfs, onAddToPortfolio, lastUpdated }) => {
-  const activeCatState = useState<CategoryKey>('AA');
-  const [activeCat, setActiveCat] = activeCatState;
+  const [activeCat, setActiveCat] = useState<ExtendedCategoryKey>('AA');
   const [selectedEtf, setSelectedEtf] = useState<EtfData | null>(null);
 
   // 1. 篩選與排序資料
   const filteredEtfs = useMemo(() => {
-    // 先篩選出當前分類的資料
-    let result = etfs.filter(e => e.category === activeCat);
+    let result: EtfData[] = [];
 
+    // 根據 activeCat 進行篩選
+    if (['AA', 'AB', 'AC', 'AD', 'AE'].includes(activeCat)) {
+        // 標準分類
+        result = etfs.filter(e => e.category === activeCat);
+    } else if (activeCat === 'International') {
+        // 國際
+        result = etfs.filter(e => INTERNATIONAL_CODES.includes(e.code));
+    } else if (activeCat === 'Active') {
+        // 主動 (注意：有些主動 ETF 可能已歸類在 AA/AB/AC，這裡使用代碼表重新撈取)
+        result = etfs.filter(e => ACTIVE_CODES.includes(e.code));
+    } else if (activeCat === 'Semi') {
+        // 半年
+        result = etfs.filter(e => SEMI_CODES.includes(e.code));
+    } else {
+        // Fallback (AF or unknown)
+        result = etfs.filter(e => e.category === 'AF');
+    }
+
+    // 排序邏輯
     if (activeCat === 'AE') {
         // 債券特殊排序邏輯
         result.sort((a, b) => {
@@ -150,14 +185,12 @@ const PerformanceView: React.FC<Props> = ({ etfs, onAddToPortfolio, lastUpdated 
       // 3. 判斷 AF (無配息/半年/年配)
       else {
           // 已知無配息名單 (00757 FANG+, 00893 電動車, 00895 未來車)
-          // 移除 00909, 00911, 00762, 00910，讓它們視為年配 (1次)
           const noDivCodes = ['00757', '00893', '00895'];
-          const semiAnnualCodes = ['0050', '006208', '00692'];
           
           if (noDivCodes.some(c => selectedEtf.code.includes(c))) {
               limit = 0;
               labelText = '無配息';
-          } else if (semiAnnualCodes.some(c => selectedEtf.code.includes(c))) {
+          } else if (SEMI_CODES.some(c => selectedEtf.code.includes(c))) {
               limit = 2;
               labelText = '半年配';
           } else {

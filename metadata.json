@@ -3,5 +3,6 @@
   "description": "2026 自組月配 投資助理 V01.1 已上架",
   "requestFramePermissions": [
     "microphone"
-  ]
+  ],
+  "majorCapabilities": []
 }

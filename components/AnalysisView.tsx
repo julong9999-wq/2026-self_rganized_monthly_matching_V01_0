@@ -2,6 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { EtfData, CategoryKey, Dividend } from '../types';
 import { LineChart, ArrowLeft, BarChart3, CircleAlert, X, Plus } from 'lucide-react';
+import { getDynamicBaseDateStr } from '../utils/sheetHelpers';
 
 interface Props {
   etfs: EtfData[];
@@ -175,7 +176,7 @@ const AnalysisView: React.FC<Props> = ({ etfs, lastUpdated, onAddToPortfolio }) 
     const dataPoints = historyAsc.length > 0 
         ? historyAsc 
         : [
-            { date: '2025/01/02', price: chartEtf.priceBase }, 
+            { date: getDynamicBaseDateStr(), price: chartEtf.priceBase }, 
             { date: 'Latest', price: chartEtf.priceCurrent }
           ];
 
@@ -436,7 +437,7 @@ const AnalysisView: React.FC<Props> = ({ etfs, lastUpdated, onAddToPortfolio }) 
          <div className="h-16 bg-white px-4 flex justify-between items-center">
              <div className="flex items-baseline gap-2">
                 <span className="text-[12px] text-slate-400 font-light">基準日 (Base)</span>
-                <span className="text-[14px] text-slate-600 font-bold">2025/01/02</span>
+                <span className="text-[14px] text-slate-600 font-bold">{getDynamicBaseDateStr()}</span>
              </div>
              <div className="flex items-baseline gap-2">
                 <span className="text-[12px] text-slate-400 font-light">資料日期</span>

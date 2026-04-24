@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { EtfData, PortfolioItem, Dividend, CategoryKey, Transaction } from './types';
-import { convertToCsvUrl, parseEtfData, parseDividendData } from './utils/sheetHelpers';
+import { convertToCsvUrl, parseEtfData, parseDividendData, getDynamicBaseDateStr } from './utils/sheetHelpers';
 import { analyzeSheets } from './services/geminiService';
 import PerformanceView from './components/PerformanceView';
 import PortfolioView from './components/PortfolioView';
@@ -17,8 +17,8 @@ import remarkGfm from 'remark-gfm';
 const DEFAULT_URL_1 = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT1Vpn2SSkcf7QLqoMoAsdyusxtydfgIQD8pyoV6XojGFnf0zGu_WWuRnI4N3U-Hu0iGRzTrR7N-OD9/pub?output=csv";
 const DEFAULT_URL_2 = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQdHAXZ0A9Uno0bztIwJbuYSmLUAXUR8SDeHn-Z6GWkuwx1PGkUppejuytX2fjB33kRO1hV35Ku31fl/pub?output=csv";
 
-// Base Date for calculations (2025/01/02)
-const BASE_DATE_STR = "2025/01/02";
+// Dynamic Base Date
+const getBaseDateStr = () => getDynamicBaseDateStr();
 const LOCAL_STORAGE_KEY_API = 'gemini_api_key';
 
 type Tab = 'performance' | 'portfolio' | 'analysis' | 'planning' | 'diagnosis' | 'announcement';
@@ -295,7 +295,8 @@ const App: React.FC = () => {
       try {
           const parsedEtfs = parseEtfData(txt2);
           const dividendMap = parseDividendData(txt1);
-          const baseDate = new Date(BASE_DATE_STR);
+          const baseDateStr = getBaseDateStr();
+          const baseDate = new Date(baseDateStr);
           const today = new Date();
           today.setHours(0,0,0,0);
 

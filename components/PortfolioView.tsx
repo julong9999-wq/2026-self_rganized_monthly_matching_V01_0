@@ -2,6 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { PortfolioItem, Transaction, EtfData } from '../types';
 import { Trash2, ChevronDown, ChevronUp, Edit3, Plus, BarChart3, Wallet, Minus, Coins, Calculator, LineChart, CircleAlert, ArrowLeft, X, CalendarCheck, TrendingUp } from 'lucide-react';
+import { getDynamicBaseDateStr } from '../utils/sheetHelpers';
 
 interface Props {
   portfolio: PortfolioItem[];
@@ -590,7 +591,7 @@ const PortfolioView: React.FC<Props> = ({ portfolio, onUpdateTransaction, onDele
     const historyAsc = [...(chartEtf.priceHistory || [])].sort((a, b) => getDateValue(a.date) - getDateValue(b.date));
     const dataPoints = historyAsc.length > 0 
         ? historyAsc 
-        : [{ date: '2025/01/02', price: chartEtf.priceBase }, { date: 'Latest', price: chartEtf.priceCurrent }];
+        : [{ date: getDynamicBaseDateStr(), price: chartEtf.priceBase }, { date: 'Latest', price: chartEtf.priceCurrent }];
 
     const startDateVal = getDateValue(dataPoints[0].date);
     const chartData = dataPoints.map(pt => {

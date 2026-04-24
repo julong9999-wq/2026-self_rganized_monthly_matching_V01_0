@@ -2,6 +2,17 @@
 import { EtfData, CategoryKey, Dividend } from '../types';
 
 /**
+ * Returns dynamic base date: first day of the same month in the previous year.
+ * Example: if today is 2026/04/24, returns "2025/04/01"
+ */
+export const getDynamicBaseDateStr = (): string => {
+    const today = new Date();
+    const prevYear = today.getFullYear() - 1;
+    const month = (today.getMonth() + 1).toString().padStart(2, '0');
+    return `${prevYear}/${month}/01`;
+};
+
+/**
  * Robust CSV Row Parser
  * Handles quoted fields containing commas correctly.
  * Example: '2024/01/01,"1,200",0056' -> ['2024/01/01', '1,200', '0056']
@@ -277,7 +288,10 @@ export const parseEtfData = (csvContent: string): EtfData[] => {
       currentPriceDateLabel = '最新股價';
   }
 
-  const idxPriceBase = findCol(['成本', '1/2', '01/02', '起始', 'base', 'open', 'start']); 
+  const dynamicBaseDate = new Date(getDynamicBaseDateStr());
+  const startStr1 = `${dynamicBaseDate.getMonth() + 1}/${dynamicBaseDate.getDate()}`;
+  const startStr2 = `${(dynamicBaseDate.getMonth() + 1).toString().padStart(2, '0')}/${dynamicBaseDate.getDate().toString().padStart(2, '0')}`;
+  const idxPriceBase = findCol(['成本', startStr1, startStr2, '1/2', '01/02', '起始', 'base', 'open', 'start']); 
   const idxYield = findCol(['殖利率', 'yield', '配息率']);
   const idxReturn = findCol(['報酬', '損益', 'return']);
 

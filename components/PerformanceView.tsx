@@ -2,6 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { EtfData, CategoryKey, Dividend } from '../types';
 import { ArrowUp, ArrowDown, Plus, TrendingUp, CircleAlert, ArrowLeft } from 'lucide-react';
+import { getDynamicBaseDateStr } from '../utils/sheetHelpers';
 
 interface Props {
   etfs: EtfData[];
@@ -296,7 +297,7 @@ const PerformanceView: React.FC<Props> = ({ etfs, onAddToPortfolio, lastUpdated 
             {/* 左側: 基準日 */}
             <div className="flex items-baseline gap-2">
                 <span className="text-[12px] text-slate-400 font-light">基準日 (Base)</span>
-                <span className="text-[14px] text-slate-600 font-bold">2025/01/02</span>
+                <span className="text-[14px] text-slate-600 font-bold">{getDynamicBaseDateStr()}</span>
             </div>
             
             {/* 右側: 資料日期 */}

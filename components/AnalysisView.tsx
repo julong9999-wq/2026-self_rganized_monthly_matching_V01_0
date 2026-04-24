@@ -521,7 +521,7 @@ const AnalysisView: React.FC<Props> = ({ etfs, lastUpdated, onAddToPortfolio }) 
                          {/* Row 3: Base Price / Est Yield / Total Return / Detail Button */}
                          <div className="grid grid-cols-[32%_22%_30%_16%] items-center gap-0 bg-white/40 -mx-2 px-2 py-1.5 rounded-b-lg mt-0.5 leading-tight divide-x divide-slate-200/60">
                             <div className="text-left flex flex-col px-1">
-                                <span className="text-[10px] font-light text-slate-500 mb-0.5">起始股價</span>
+                                <span className="text-[10px] font-light text-slate-500 mb-0.5">基準日股價</span>
                                 <span className="text-[16px] font-light text-slate-700 leading-none">{etf.priceBase}</span>
                             </div>
                             <div className="text-center flex flex-col px-1">

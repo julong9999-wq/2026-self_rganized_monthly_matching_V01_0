@@ -1,5 +1,6 @@
 import React from 'react';
 import { BookOpen, Database, CheckCircle, Zap, Calendar, Search, ShieldCheck, Target, ListChecks } from 'lucide-react';
+import { getDynamicBaseDateStr } from '../utils/sheetHelpers';
 
 const FeasibilityCheck: React.FC = () => {
   return (
@@ -22,7 +23,7 @@ const FeasibilityCheck: React.FC = () => {
               <h4 className="font-semibold text-indigo-900">8 大查核時間點</h4>
             </div>
             <ul className="text-xs space-y-1.5 list-decimal pl-4 text-slate-600">
-              <li>2025/1/2 (年初開盤)</li>
+              <li>{getDynamicBaseDateStr()} (基準日)</li>
               <li>上個月月初 (首交易日)</li>
               <li>上個月月底 (末交易日)</li>
               <li>本月月初 (首交易日)</li>

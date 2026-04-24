@@ -291,7 +291,7 @@ export const parseEtfData = (csvContent: string): EtfData[] => {
   const dynamicBaseDate = new Date(getDynamicBaseDateStr());
   const startStr1 = `${dynamicBaseDate.getMonth() + 1}/${dynamicBaseDate.getDate()}`;
   const startStr2 = `${(dynamicBaseDate.getMonth() + 1).toString().padStart(2, '0')}/${dynamicBaseDate.getDate().toString().padStart(2, '0')}`;
-  const idxPriceBase = findCol(['成本', startStr1, startStr2, '1/2', '01/02', '起始', 'base', 'open', 'start']); 
+  const idxPriceBase = findCol(['成本', startStr1, startStr2, '1/2', '01/02', '起始', '基準日', '基準日股價', 'base', 'open', 'start']); 
   const idxYield = findCol(['殖利率', 'yield', '配息率']);
   const idxReturn = findCol(['報酬', '損益', 'return']);
 

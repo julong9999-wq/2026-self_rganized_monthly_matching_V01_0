@@ -291,7 +291,13 @@ export const parseEtfData = (csvContent: string): EtfData[] => {
   const dynamicBaseDate = new Date(getDynamicBaseDateStr());
   const startStr1 = `${dynamicBaseDate.getMonth() + 1}/${dynamicBaseDate.getDate()}`;
   const startStr2 = `${(dynamicBaseDate.getMonth() + 1).toString().padStart(2, '0')}/${dynamicBaseDate.getDate().toString().padStart(2, '0')}`;
-  const idxPriceBase = findCol(['成本', startStr1, startStr2, '1/2', '01/02', '起始', '基準日', '基準日股價', 'base', 'open', 'start']); 
+  
+  // Prioritize finding the exact dynamic base date, then use fallback keywords
+  let idxPriceBase = findCol([startStr1, startStr2, '基準日', '基準日股價']);
+  if (idxPriceBase === -1) {
+      idxPriceBase = findCol(['成本', '1/2', '01/02', '起始', 'base', 'open', 'start']);
+  }
+
   const idxYield = findCol(['殖利率', 'yield', '配息率']);
   const idxReturn = findCol(['報酬', '損益', 'return']);
 
@@ -367,8 +373,42 @@ export const parseEtfData = (csvContent: string): EtfData[] => {
         if (idxPriceBase !== -1 && row[idxPriceBase]) {
             priceBase = parseNum(row[idxPriceBase]);
         } else if (priceHistory.length > 0) {
-            // 如果抓不到指定的 Base 欄位，嘗試用歷史數據的第一筆當 Base
-            priceBase = priceHistory[0].price;
+            const baseYear = dynamicBaseDate.getFullYear();
+            const baseMonth = dynamicBaseDate.getMonth(); // 0-11
+            
+            let matchedPrice = 0;
+            let minTime = Infinity;
+
+            for (const ph of priceHistory) {
+                // Try parsing the date
+                const cleanStr = ph.date.trim().replace(/[-.]/g, '/');
+                let d = new Date(cleanStr);
+                
+                // Handling YYMMDD or YYYYMMDD without slashes is not well supported by new Date() 
+                // but the regex mostly catches slashes
+                if (isNaN(d.getTime())) {
+                   // Fallback for mm/dd without year
+                   const parts = cleanStr.split('/');
+                   if (parts.length === 2) {
+                       d = new Date(baseYear, parseInt(parts[0])-1, parseInt(parts[1]));
+                   }
+                }
+
+                if (!isNaN(d.getTime())) {
+                    if (d.getFullYear() === baseYear && d.getMonth() === baseMonth) {
+                        if (d.getTime() < minTime) {
+                            minTime = d.getTime();
+                            matchedPrice = ph.price;
+                        }
+                    }
+                }
+            }
+
+            if (matchedPrice > 0) {
+                priceBase = matchedPrice;
+            } else {
+                priceBase = priceHistory[0].price; // Fallback to first history item
+            }
         }
 
         if (idxYield !== -1 && row[idxYield]) {

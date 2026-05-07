@@ -370,24 +370,18 @@ export const parseEtfData = (csvContent: string): EtfData[] => {
             priceCurrent = parseNum(row[idxPriceCurrent]);
         }
         
-        if (idxPriceBase !== -1 && row[idxPriceBase]) {
-            priceBase = parseNum(row[idxPriceBase]);
-        } else if (priceHistory.length > 0) {
+        let matchedPriceFromHistory = 0;
+        if (priceHistory.length > 0) {
             const baseYear = dynamicBaseDate.getFullYear();
             const baseMonth = dynamicBaseDate.getMonth(); // 0-11
             
-            let matchedPrice = 0;
             let minTime = Infinity;
 
             for (const ph of priceHistory) {
-                // Try parsing the date
                 const cleanStr = ph.date.trim().replace(/[-.]/g, '/');
                 let d = new Date(cleanStr);
                 
-                // Handling YYMMDD or YYYYMMDD without slashes is not well supported by new Date() 
-                // but the regex mostly catches slashes
                 if (isNaN(d.getTime())) {
-                   // Fallback for mm/dd without year
                    const parts = cleanStr.split('/');
                    if (parts.length === 2) {
                        d = new Date(baseYear, parseInt(parts[0])-1, parseInt(parts[1]));
@@ -398,17 +392,19 @@ export const parseEtfData = (csvContent: string): EtfData[] => {
                     if (d.getFullYear() === baseYear && d.getMonth() === baseMonth) {
                         if (d.getTime() < minTime) {
                             minTime = d.getTime();
-                            matchedPrice = ph.price;
+                            matchedPriceFromHistory = ph.price;
                         }
                     }
                 }
             }
+        }
 
-            if (matchedPrice > 0) {
-                priceBase = matchedPrice;
-            } else {
-                priceBase = priceHistory[0].price; // Fallback to first history item
-            }
+        if (matchedPriceFromHistory > 0) {
+            priceBase = matchedPriceFromHistory;
+        } else if (idxPriceBase !== -1 && row[idxPriceBase]) {
+            priceBase = parseNum(row[idxPriceBase]);
+        } else if (priceHistory.length > 0) {
+            priceBase = priceHistory[0].price;
         }
 
         if (idxYield !== -1 && row[idxYield]) {

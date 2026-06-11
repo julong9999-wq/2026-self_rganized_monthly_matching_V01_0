@@ -244,7 +244,7 @@ const HoldingAnalysisView: React.FC<Props> = ({ portfolio, stockDailyPrices }) =
         if (activeTab === '最新') return b.dailyChangePct - a.dailyChangePct;
         if (activeTab === '振幅') return b.amplitudePct - a.amplitudePct;
         if (activeTab === '反彈') return b.reboundPct - a.reboundPct;
-        if (activeTab === '下跌') return b.drawdownPct - a.drawdownPct;
+        if (activeTab === '下跌') return a.drawdownPct - b.drawdownPct; // 跌多 (數值較為負的) 在上
         return 0;
     });
   }, [data, activeTab]);
@@ -289,8 +289,9 @@ const HoldingAnalysisView: React.FC<Props> = ({ portfolio, stockDailyPrices }) =
                                 </td>
                                 {activeTab === '最新' && (
                                     <>
+                                        <td className="px-2 py-1.5 font-medium text-slate-800 text-center whitespace-nowrap">{fmtPrice(s.latestPrice)}</td>
                                         <td className="px-2 py-1.5 whitespace-nowrap text-center text-slate-500">{s.latestDate}</td>
-                                        <td className={`px-2 py-1.5 text-right font-medium whitespace-nowrap ${valColor(s.dailyChange)}`}>
+                                        <td className={`px-2 py-1.5 text-center font-bold border-l border-slate-100 whitespace-nowrap ${valColor(s.dailyChange)}`}>
                                             {prefix(s.dailyChange)}{s.dailyChange.toFixed(2)}
                                         </td>
                                     </>
@@ -326,8 +327,9 @@ const HoldingAnalysisView: React.FC<Props> = ({ portfolio, stockDailyPrices }) =
                             <tr className="bg-white">
                                 {activeTab === '最新' && (
                                     <>
-                                        <td className="px-2 py-1.5 font-medium text-slate-800 text-center whitespace-nowrap">{fmtPrice(s.latestPrice)}</td>
-                                        <td className={`px-2 py-1.5 font-medium whitespace-nowrap`}>
+                                        <td className="px-2 py-1.5 whitespace-nowrap text-center text-slate-500">昨收</td>
+                                        <td className="px-2 py-1.5 text-center font-medium text-slate-500 whitespace-nowrap">{fmtPrice(s.latestPrice - s.dailyChange)}</td>
+                                        <td className={`px-2 py-1.5 font-bold whitespace-nowrap`}>
                                             <PercentBar value={s.dailyChangePct} max={maxDailyChangePct} colorClass={pctColor(s.dailyChangePct)} />
                                         </td>
                                     </>

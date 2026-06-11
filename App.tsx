@@ -585,9 +585,9 @@ const App: React.FC = () => {
       switch(activeTab) {
           case 'performance': return '績效查詢';
           case 'portfolio': return '自組月配';
-          case 'analysis': return '分析資料';
-          case 'planning': return '智慧規劃';
-          case 'diagnosis': return 'AI診斷';
+          case 'analysis': return '投資分析';
+          case 'market_index': return '大盤指數';
+          case 'holding_analysis': return '持股分析';
           case 'announcement': return '配息公告';
           default: return '投資助理';
       }

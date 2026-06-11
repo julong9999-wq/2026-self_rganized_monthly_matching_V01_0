@@ -52,7 +52,33 @@ const SheetConfigView: React.FC<Props> = ({ defaultUrl1, defaultUrl2, defaultUrl
         <div className="p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
             
-            <div className="space-y-3">
+            <div className="pb-6 border-b border-slate-100 flex flex-col gap-4">
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full bg-blue-900 text-white font-bold py-4 rounded-xl hover:bg-blue-800 active:scale-[0.98] transition-all shadow-md flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed text-xl"
+              >
+                {isLoading ? (
+                  <>處理中...</>
+                ) : (
+                  <>
+                    <Play className="w-6 h-6 fill-current" />
+                    讀取並分析
+                  </>
+                )}
+              </button>
+
+              <div className="text-center space-y-2">
+                  <p className="text-base text-red-500 font-bold bg-red-50 py-2 rounded-lg border border-red-100 leading-snug">
+                      請每天執行 "讀取並分析" 按鈕<br/>以便更新 "即時股價"
+                  </p>
+                  <p className="text-sm text-slate-400">
+                      系統將自動解析 CSV 格式
+                  </p>
+              </div>
+            </div>
+
+            <div className="space-y-3 pt-2">
               <label className="text-lg font-bold text-slate-800 flex items-center gap-2">
                 <Database className="w-5 h-5 text-blue-900" />
                 配息資料表單 (Sheet 1)
@@ -120,32 +146,6 @@ const SheetConfigView: React.FC<Props> = ({ defaultUrl1, defaultUrl2, defaultUrl
                 placeholder="https://docs.google.com/spreadsheets/..."
                 className="w-full px-4 py-4 rounded-xl border border-slate-300 focus:border-blue-900 focus:ring-2 focus:ring-blue-200 transition-all text-lg text-slate-700 bg-slate-50"
               />
-            </div>
-
-            <div className="pt-6">
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full bg-blue-900 text-white font-bold py-4 rounded-xl hover:bg-blue-800 active:scale-[0.98] transition-all shadow-md flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed text-xl"
-              >
-                {isLoading ? (
-                  <>處理中...</>
-                ) : (
-                  <>
-                    <Play className="w-6 h-6 fill-current" />
-                    讀取並分析
-                  </>
-                )}
-              </button>
-            </div>
-            
-            <div className="text-center space-y-2 mt-4">
-                <p className="text-base text-red-500 font-bold bg-red-50 py-2 rounded-lg border border-red-100 leading-snug">
-                    請每天執行 "讀取並分析" 按鈕<br/>以便更新 "即時股價"
-                </p>
-                <p className="text-sm text-slate-400">
-                    系統將自動解析 CSV 格式
-                </p>
             </div>
 
             {/* 網站瀏覽人數紀錄 */}

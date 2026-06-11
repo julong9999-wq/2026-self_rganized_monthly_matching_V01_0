@@ -34,8 +34,11 @@ const HoldingAnalysisView: React.FC<Props> = ({ portfolio, stockDailyPrices }) =
   const [activeTab, setActiveTab] = useState<'最新'|'振幅'|'反彈'|'下跌'>('最新');
 
   const data = useMemo(() => {
-    const holdings = portfolio.filter(p => p.count > 0);
-    const holdingCodes = holdings.map(h => h.code);
+    const holdings = portfolio.filter(p => {
+        const totalShares = p.transactions.reduce((s, t) => s + t.shares, 0);
+        return totalShares > 0;
+    });
+    const holdingCodes = holdings.map(h => h.id);
     
     const targetPrices = stockDailyPrices.filter(d => holdingCodes.includes(d.code));
 
@@ -46,7 +49,7 @@ const HoldingAnalysisView: React.FC<Props> = ({ portfolio, stockDailyPrices }) =
     });
     
     const threeMonthsAgo = new Date(maxTime);
-    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 2); // Show 2 months for better zoom fitting perhaps
 
     const recentData = targetPrices.filter(d => {
        const dateP = new Date(d.date.replace(/[-.]/g, '/'));
@@ -55,7 +58,10 @@ const HoldingAnalysisView: React.FC<Props> = ({ portfolio, stockDailyPrices }) =
 
     const stats: any[] = [];
     holdings.forEach(h => {
-        const idxData = recentData.filter(d => d.code === h.code).sort((a, b) => {
+        const code = h.id;
+        const name = h.etf.name;
+        
+        const idxData = recentData.filter(d => d.code === code).sort((a, b) => {
             const timeA = new Date(a.date.replace(/[-.]/g, '/')).getTime();
             const timeB = new Date(b.date.replace(/[-.]/g, '/')).getTime();
             return timeA - timeB;
@@ -93,8 +99,8 @@ const HoldingAnalysisView: React.FC<Props> = ({ portfolio, stockDailyPrices }) =
         const drawdownPct = maxClose ? ((latestPrice - maxClose) / maxClose) * 100 : 0;
 
         stats.push({
-            code: h.code,
-            name: h.name,
+            code: code,
+            name: name,
             latestDate,
             latestPrice,
             dailyChange,
@@ -218,11 +224,11 @@ const HoldingAnalysisView: React.FC<Props> = ({ portfolio, stockDailyPrices }) =
   const prefix = (val: number) => val > 0 ? '+' : '';
   const fmtPrice = (val: number) => val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-  if (portfolio.length === 0 || portfolio.filter(p => p.count > 0).length === 0) {
+  if (portfolio.length === 0 || portfolio.filter(p => p.transactions.reduce((s, t) => s + t.shares, 0) > 0).length === 0) {
       return (
          <div className="h-full p-6 overflow-y-auto scrollbar-hide bg-slate-50">
              <div className="bg-white rounded-xl p-8 text-center text-slate-400 shadow-sm text-lg">
-                 目前沒有持股資料，請先至「自組月配」或「績效查詢」新增持股。
+                 目前沒有持股資料，請先至「自組月配」新增持股與交易紀錄。
              </div>
          </div>
       );

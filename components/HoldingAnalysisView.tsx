@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { PortfolioItem, StockDailyPrice } from '../types';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ComposedChart, Bar } from 'recharts';
 import { format } from 'date-fns';
+import { X } from 'lucide-react';
 
 interface Props {
   portfolio: PortfolioItem[];
@@ -32,6 +33,7 @@ const PercentBar = ({ value, max, colorClass }: { value: number, max: number, co
 
 const HoldingAnalysisView: React.FC<Props> = ({ portfolio, stockDailyPrices }) => {
   const [activeTab, setActiveTab] = useState<'最新'|'振幅'|'反彈'|'下跌'>('最新');
+  const [selectedETF, setSelectedETF] = useState<any | null>(null);
 
   const data = useMemo(() => {
     const holdings = portfolio.filter(p => {
@@ -236,6 +238,17 @@ const HoldingAnalysisView: React.FC<Props> = ({ portfolio, stockDailyPrices }) =
 
   if (!data || data.stats.length === 0) return <div className="p-4 text-center text-slate-500">無持股歷史資料</div>;
 
+  const sortedStats = useMemo(() => {
+    if (!data) return [];
+    return [...data.stats].sort((a, b) => {
+        if (activeTab === '最新') return b.dailyChangePct - a.dailyChangePct;
+        if (activeTab === '振幅') return b.amplitudePct - a.amplitudePct;
+        if (activeTab === '反彈') return b.reboundPct - a.reboundPct;
+        if (activeTab === '下跌') return b.drawdownPct - a.drawdownPct;
+        return 0;
+    });
+  }, [data, activeTab]);
+
   const maxDailyChangePct = Math.max(1, ...data.stats.map(s => Math.abs(s.dailyChangePct)));
   const maxAmplitudePct = Math.max(1, ...data.stats.map(s => Math.abs(s.amplitudePct)));
   const maxReboundPct = Math.max(1, ...data.stats.map(s => Math.abs(s.reboundPct)));
@@ -261,10 +274,14 @@ const HoldingAnalysisView: React.FC<Props> = ({ portfolio, stockDailyPrices }) =
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-2">
             <table className="w-full text-xs text-slate-700">
                 <tbody className="divide-y divide-slate-100">
-                    {data.stats.map(s => (
+                    {sortedStats.map(s => (
                         <React.Fragment key={s.code}>
                             <tr className="bg-slate-50/50">
-                                <td rowSpan={2} className="px-2 py-2 font-bold text-slate-800 align-middle w-12 border-r border-slate-100 whitespace-nowrap text-center">
+                                <td 
+                                    rowSpan={2} 
+                                    className="px-2 py-2 font-bold text-slate-800 align-middle w-12 border-r border-slate-100 whitespace-nowrap text-center cursor-pointer hover:bg-slate-100"
+                                    onClick={() => setSelectedETF(s)}
+                                >
                                     <div className="flex flex-col items-center">
                                        <span className="text-[10px] text-slate-400 font-medium">{s.code}</span>
                                        <span>{s.name}</span>
@@ -349,15 +366,6 @@ const HoldingAnalysisView: React.FC<Props> = ({ portfolio, stockDailyPrices }) =
             </table>
         </div>
 
-        {/* Charts: Individual Candlestick/Line Charts */}
-        <div className="space-y-4 mb-2">
-            {data.stats.map((s, idx) => {
-                return (
-                    <CandlestickChart key={s.code} data={s.history} title={`${s.code} ${s.name}`} color={COLORS[idx % COLORS.length]} />
-                );
-            })}
-        </div>
-        
         {/* Comparison Line Chart (Moved to the bottom as requested) */}
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-1.5 mb-2 mt-4">
             <div className="flex items-baseline gap-2 mb-1 px-1">
@@ -365,7 +373,7 @@ const HoldingAnalysisView: React.FC<Props> = ({ portfolio, stockDailyPrices }) =
                <span className="text-xs text-slate-400">同一起跑點</span>
             </div>
             
-            <div className="w-full aspect-video flex flex-col">
+            <div className="w-full h-[400px] flex flex-col">
                 <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={data.comparisonData} margin={{ top: 2, right: 2, left: -20, bottom: 0 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
@@ -414,6 +422,33 @@ const HoldingAnalysisView: React.FC<Props> = ({ portfolio, stockDailyPrices }) =
                 </ResponsiveContainer>
             </div>
         </div>
+
+        {/* Technical Chart Modal */}
+        {selectedETF && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm" onClick={() => setSelectedETF(null)}>
+                <div 
+                    className="bg-slate-50 rounded-2xl w-full max-w-lg shadow-xl overflow-hidden flex flex-col border border-slate-100"
+                    onClick={e => e.stopPropagation()}
+                >
+                    <div className="flex items-center justify-between p-4 border-b border-slate-200 bg-white">
+                        <h2 className="text-lg font-bold text-slate-800 tracking-wide">{selectedETF.name} ({selectedETF.code})</h2>
+                        <button 
+                            onClick={() => setSelectedETF(null)}
+                            className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
+                    </div>
+                    <div className="p-4 flex-1 overflow-y-auto">
+                        <CandlestickChart 
+                            data={selectedETF.history} 
+                            title={`${selectedETF.code} ${selectedETF.name} 技術線圖`} 
+                            color={COLORS[data.stats.findIndex(s => s.code === selectedETF.code) % COLORS.length]} 
+                        />
+                    </div>
+                </div>
+            </div>
+        )}
 
     </div>
   );

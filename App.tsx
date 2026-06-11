@@ -34,7 +34,7 @@ const CACHE_KEY_DATA_4 = 'sheet_data_4_v6';
 const CACHE_KEY_DATA_5 = 'sheet_data_5_v6';
 const CACHE_KEY_TIME = 'sheet_last_fetch_time_v6';
 const CACHE_KEY_PORTFOLIO = 'user_portfolio_v1'; // 新增 Portfolio 儲存 Key
-const CACHE_DURATION = 15 * 60 * 1000; // 15 分鐘
+const CACHE_DURATION = 60 * 1000; // 1 分鐘
 
 // 半年配名單 (用於 App 邏輯計算次數)
 const SEMI_ANNUAL_CODES = [
@@ -393,11 +393,11 @@ const App: React.FC = () => {
             }
         }
 
-        const csvUrl1 = convertToCsvUrl(url1);
-        const csvUrl2 = convertToCsvUrl(url2);
-        const csvUrl3 = url3 ? convertToCsvUrl(url3) : '';
-        const csvUrl4 = url4 ? convertToCsvUrl(url4) : '';
-        const csvUrl5 = url5 ? convertToCsvUrl(url5) : '';
+        const csvUrl1 = convertToCsvUrl(url1) + `&_t=${now}`;
+        const csvUrl2 = convertToCsvUrl(url2) + `&_t=${now}`;
+        const csvUrl3 = url3 ? convertToCsvUrl(url3) + `&_t=${now}` : '';
+        const csvUrl4 = url4 ? convertToCsvUrl(url4) + `&_t=${now}` : '';
+        const csvUrl5 = url5 ? convertToCsvUrl(url5) + `&_t=${now}` : '';
 
         // Safe fetch function that won't throw if URL is empty or fetch fails
         const safeFetch = (u: string) => u ? smartFetch(u).catch(e => {
@@ -711,7 +711,17 @@ const App: React.FC = () => {
             <h1 className="text-xl font-bold tracking-wide pointer-events-auto shadow-sm">{getHeaderTitle()}</h1>
         </div>
 
-        <div className="flex items-center justify-end z-10 w-20">
+        <div className="flex items-center justify-end z-10 gap-3 w-32">
+             {isConfigured && (
+                 <button
+                    onClick={() => handleStartDataLoad(DEFAULT_URL_1, DEFAULT_URL_2, DEFAULT_URL_3, DEFAULT_URL_4, DEFAULT_URL_5, true)}
+                    className={`text-blue-100 hover:text-white transition-colors cursor-pointer active:scale-95 ${isLoading ? 'animate-spin opacity-50' : ''}`}
+                    title="強制重新整理"
+                    disabled={isLoading}
+                 >
+                    <RefreshCcw className="w-5 h-5" />
+                 </button>
+             )}
              <button
                 onClick={() => setShowBetaModal(true)}
                 className="text-[13px] font-bold text-yellow-300 tracking-wider border border-yellow-400/30 px-2 py-1 rounded bg-yellow-400/10 whitespace-nowrap hover:bg-yellow-400/20 transition-colors cursor-pointer active:scale-95"

@@ -18,6 +18,19 @@ const formatDateYMD = (dateStr: string) => {
     return dateStr;
 };
 
+const PercentBar = ({ value, max, colorClass }: { value: number, max: number, colorClass: string }) => {
+    const width = Math.min(100, (Math.abs(value) / max) * 100);
+    const prefix = value > 0 ? '+' : '';
+    return (
+        <div className="flex items-center gap-1.5 justify-end">
+            <span className={colorClass}>{prefix}{value.toFixed(2)}%</span>
+            <div className="w-10 h-1.5 bg-slate-100 rounded-sm overflow-hidden flex">
+                 <div className={`h-full ${colorClass.replace('text-', 'bg-')}`} style={{ width: `${width}%` }} />
+            </div>
+        </div>
+    );
+};
+
 const MarketIndexView: React.FC<Props> = ({ twIndices, usIndices }) => {
   const [activeTab, setActiveTab] = useState<'最新'|'振幅'|'反彈'|'下跌'>('最新');
 
@@ -219,6 +232,11 @@ const MarketIndexView: React.FC<Props> = ({ twIndices, usIndices }) => {
 
   if (!data || data.stats.length === 0) return <div className="p-4 text-center text-slate-500">無大盤資料</div>;
 
+  const maxDailyChangePct = Math.max(1, ...data.stats.map(s => Math.abs(s.dailyChangePct)));
+  const maxAmplitudePct = Math.max(1, ...data.stats.map(s => Math.abs(s.amplitudePct)));
+  const maxReboundPct = Math.max(1, ...data.stats.map(s => Math.abs(s.reboundPct)));
+  const maxDrawdownPct = Math.max(1, ...data.stats.map(s => Math.abs(s.drawdownPct)));
+
   return (
     <div className="h-full p-2 overflow-y-auto scrollbar-hide bg-slate-50">
         
@@ -329,8 +347,8 @@ const MarketIndexView: React.FC<Props> = ({ twIndices, usIndices }) => {
                                 {activeTab === '最新' && (
                                     <>
                                         <td className="px-2 py-1.5 font-medium text-slate-800 text-center whitespace-nowrap">{fmtPrice(s.latestPrice)}</td>
-                                        <td className={`px-2 py-1.5 text-right font-medium whitespace-nowrap ${pctColor(s.dailyChangePct)}`}>
-                                            {prefix(s.dailyChangePct)}{s.dailyChangePct.toFixed(2)}%
+                                        <td className={`px-2 py-1.5 font-medium whitespace-nowrap`}>
+                                            <PercentBar value={s.dailyChangePct} max={maxDailyChangePct} colorClass={pctColor(s.dailyChangePct)} />
                                         </td>
                                     </>
                                 )}
@@ -338,8 +356,8 @@ const MarketIndexView: React.FC<Props> = ({ twIndices, usIndices }) => {
                                     <>
                                         <td className="px-2 py-1.5 whitespace-nowrap text-center">{s.dateMin}</td>
                                         <td className="px-2 py-1.5 text-right font-medium text-slate-800 whitespace-nowrap">{fmtPrice(s.minClose)}</td>
-                                        <td className={`px-2 py-1.5 font-bold text-blue-600 border-l border-slate-100 text-center whitespace-nowrap`}>
-                                            {s.amplitudePct.toFixed(2)}%
+                                        <td className={`px-2 py-1.5 font-bold whitespace-nowrap`}>
+                                            <PercentBar value={s.amplitudePct} max={maxAmplitudePct} colorClass="text-blue-600" />
                                         </td>
                                     </>
                                 )}
@@ -347,8 +365,8 @@ const MarketIndexView: React.FC<Props> = ({ twIndices, usIndices }) => {
                                     <>
                                         <td className="px-2 py-1.5 text-blue-600 font-bold whitespace-nowrap text-center">{s.latestDate}</td>
                                         <td className="px-2 py-1.5 text-right font-medium text-blue-600 whitespace-nowrap">{fmtPrice(s.latestPrice)}</td>
-                                        <td className={`px-2 py-1.5 font-bold border-l border-slate-100 text-center whitespace-nowrap ${valColor(s.reboundPct)}`}>
-                                            {prefix(s.reboundPct)}{s.reboundPct.toFixed(2)}%
+                                        <td className={`px-2 py-1.5 font-bold whitespace-nowrap`}>
+                                            <PercentBar value={s.reboundPct} max={maxReboundPct} colorClass={pctColor(s.reboundPct)} />
                                         </td>
                                     </>
                                 )}
@@ -356,8 +374,8 @@ const MarketIndexView: React.FC<Props> = ({ twIndices, usIndices }) => {
                                     <>
                                         <td className="px-2 py-1.5 text-blue-600 font-bold whitespace-nowrap text-center">{s.latestDate}</td>
                                         <td className="px-2 py-1.5 text-right font-medium text-blue-600 whitespace-nowrap">{fmtPrice(s.latestPrice)}</td>
-                                        <td className={`px-2 py-1.5 font-bold border-l border-slate-100 text-center whitespace-nowrap ${valColor(s.drawdownPct)}`}>
-                                            {prefix(s.drawdownPct)}{s.drawdownPct.toFixed(2)}%
+                                        <td className={`px-2 py-1.5 font-bold whitespace-nowrap`}>
+                                            <PercentBar value={s.drawdownPct} max={maxDrawdownPct} colorClass={pctColor(s.drawdownPct)} />
                                         </td>
                                     </>
                                 )}

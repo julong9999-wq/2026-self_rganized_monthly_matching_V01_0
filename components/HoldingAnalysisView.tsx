@@ -433,7 +433,18 @@ const HoldingAnalysisView: React.FC<Props> = ({ portfolio, stockDailyPrices }) =
                             itemStyle={{ fontSize: 12, padding: 0 }}
                             contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                         />
-                        <Legend content={<RenderCustomLegend />} />
+                        <Legend 
+                            content={<RenderCustomLegend />} 
+                            payload={data.sortedNames.map(name => {
+                                const statIdx = data.stats.findIndex(s => s.name === name);
+                                return {
+                                    value: name,
+                                    type: 'circle',
+                                    id: name,
+                                    color: COLORS[(statIdx >= 0 ? statIdx : 0) % COLORS.length]
+                                };
+                            })}
+                        />
                         {data.sortedNames.map((name) => {
                             const statIdx = data.stats.findIndex(s => s.name === name);
                             return (

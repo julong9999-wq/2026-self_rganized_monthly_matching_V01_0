@@ -299,6 +299,7 @@ const MarketIndexView: React.FC<Props> = ({ twIndices, usIndices }) => {
                         />
                         <YAxis width={30} tickFormatter={(val) => `${Math.round(val)}%`} tick={{ fontSize: 9, fill: '#94a3b8' }} tickLine={false} axisLine={false} />
                         <Tooltip 
+                            itemSorter={(item) => -(item.value as number)}
                             formatter={(value: any, name: any) => [`${Number(value).toFixed(2)}%`, name]}
                             labelFormatter={(label) => `日期: ${label}`}
                             labelStyle={{ fontSize: 10, color: '#64748b', marginBottom: 4 }}

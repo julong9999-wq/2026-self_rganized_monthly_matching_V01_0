@@ -31,6 +31,47 @@ const PercentBar = ({ value, max, colorClass }: { value: number, max: number, co
     );
 };
 
+const RenderCustomLegend = (props: any) => {
+    const { payload } = props;
+    if (!payload) return null;
+    const rows = [];
+    for (let i = 0; i < payload.length; i += 3) {
+        rows.push(payload.slice(i, i + 3));
+    }
+    return (
+        <div className="w-full mt-4 px-2 tracking-tighter">
+            {rows.map((row: any[], rIdx: number) => (
+                <div key={rIdx} className="flex justify-between items-center mb-3 w-full">
+                    <div className="flex-1 flex justify-start">
+                        {row[0] && (
+                            <div className="flex items-center gap-1.5 w-[90px]">
+                                <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: row[0].color }} />
+                                <span className="text-[11px] text-slate-700 truncate font-medium" title={row[0].value}>{row[0].value}</span>
+                            </div>
+                        )}
+                    </div>
+                    <div className="flex-1 flex justify-center">
+                        {row[1] && (
+                            <div className="flex items-center gap-1.5 w-[90px]">
+                                <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: row[1].color }} />
+                                <span className="text-[11px] text-slate-700 truncate font-medium" title={row[1].value}>{row[1].value}</span>
+                            </div>
+                        )}
+                    </div>
+                    <div className="flex-1 flex justify-end">
+                        {row[2] && (
+                            <div className="flex items-center gap-1.5 w-[90px]">
+                                <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: row[2].color }} />
+                                <span className="text-[11px] text-slate-700 truncate font-medium" title={row[2].value}>{row[2].value}</span>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+};
+
 const HoldingAnalysisView: React.FC<Props> = ({ portfolio, stockDailyPrices }) => {
   const [activeTab, setActiveTab] = useState<'最新'|'振幅'|'反彈'|'下跌'>('最新');
   const [selectedETF, setSelectedETF] = useState<any | null>(null);
@@ -375,7 +416,7 @@ const HoldingAnalysisView: React.FC<Props> = ({ portfolio, stockDailyPrices }) =
                <span className="text-xs text-slate-400">同一起跑點</span>
             </div>
             
-            <div className="w-full h-[400px] flex flex-col">
+            <div className="w-full h-[600px] flex flex-col pb-10">
                 <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={data.comparisonData} margin={{ top: 2, right: 2, left: -20, bottom: 0 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
@@ -392,19 +433,7 @@ const HoldingAnalysisView: React.FC<Props> = ({ portfolio, stockDailyPrices }) =
                             itemStyle={{ fontSize: 12, padding: 0 }}
                             contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                         />
-                        <Legend 
-                            wrapperStyle={{ fontSize: '10px' }} 
-                            iconType="circle"
-                            payload={data.sortedNames.map(name => {
-                                const statIdx = data.stats.findIndex(s => s.name === name);
-                                return {
-                                    value: name,
-                                    type: 'circle',
-                                    id: name,
-                                    color: COLORS[(statIdx >= 0 ? statIdx : 0) % COLORS.length]
-                                };
-                            })}
-                        />
+                        <Legend content={<RenderCustomLegend />} />
                         {data.sortedNames.map((name) => {
                             const statIdx = data.stats.findIndex(s => s.name === name);
                             return (

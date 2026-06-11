@@ -92,7 +92,7 @@ const HoldingAnalysisView: React.FC<Props> = ({ portfolio, stockDailyPrices }) =
     });
     
     const threeMonthsAgo = new Date(maxTime);
-    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 2); // Show 2 months for better zoom fitting perhaps
+    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
 
     const recentData = targetPrices.filter(d => {
        const dateP = new Date(d.date.replace(/[-.]/g, '/'));

@@ -1,30 +1,37 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { EtfData, PortfolioItem, Dividend, CategoryKey, Transaction } from './types';
-import { convertToCsvUrl, parseEtfData, parseDividendData, getDynamicBaseDateStr } from './utils/sheetHelpers';
+import { EtfData, PortfolioItem, Dividend, CategoryKey, Transaction, MarketIndex, StockDailyPrice } from './types';
+import { convertToCsvUrl, parseEtfData, parseDividendData, parseMarketIndex, parseStockDailyPrice, getDynamicBaseDateStr } from './utils/sheetHelpers';
 import { analyzeSheets } from './services/geminiService';
 import PerformanceView from './components/PerformanceView';
 import PortfolioView from './components/PortfolioView';
 import SheetConfigView from './components/SheetConfigView';
 import AnnouncementView from './components/AnnouncementView';
-import PlanningView from './components/PlanningView';
-import AnalysisView from './components/AnalysisView'; // Import the new view
-import { LayoutDashboard, PieChart, BrainCircuit, Bot, Megaphone, CheckCircle, AlertTriangle, Loader2, BarChart3, Settings, Key, CircleHelp, X, ExternalLink, ShieldCheck, Tag, Trash2, LogIn, Play, RefreshCcw, Info, BookOpen, Fingerprint, Mic, Plus, MousePointerClick, TrendingUp } from 'lucide-react';
+import MarketIndexView from './components/MarketIndexView';
+import HoldingAnalysisView from './components/HoldingAnalysisView';
+import AnalysisView from './components/AnalysisView';
+import { LayoutDashboard, PieChart, Activity, Briefcase, Bot, Megaphone, CheckCircle, AlertTriangle, Loader2, BarChart3, Settings, Key, CircleHelp, X, ExternalLink, ShieldCheck, Tag, Trash2, LogIn, Play, RefreshCcw, Info, BookOpen, Fingerprint, Mic, Plus, MousePointerClick, TrendingUp } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 // Default URLs
 const DEFAULT_URL_1 = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT1Vpn2SSkcf7QLqoMoAsdyusxtydfgIQD8pyoV6XojGFnf0zGu_WWuRnI4N3U-Hu0iGRzTrR7N-OD9/pub?output=csv";
 const DEFAULT_URL_2 = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQdHAXZ0A9Uno0bztIwJbuYSmLUAXUR8SDeHn-Z6GWkuwx1PGkUppejuytX2fjB33kRO1hV35Ku31fl/pub?output=csv";
+const DEFAULT_URL_3 = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ825Haq0XnIX_UDCtnyd5t94U943OJ_sCJdLj2-6XfbWT4KkLaQ-RWBL_esd4HHaQGJTW3hOV2qtax/pub?gid=779511679&single=true&output=csv";
+const DEFAULT_URL_4 = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRuulQ6E-VFeNU6otpWOOIZQOwcG8ybE0EdR_RooQLW1VYi6Xhtcl4KnADees6YIALU29jmBlODPeQQ/pub?gid=779511679&single=true&output=csv";
+const DEFAULT_URL_5 = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQaRKeSBt4XfeC9uNf56p38DwscoPK0-eFM3J4-Vz8LeVBdgsClDZy0baU-FHyFv5cz-QNCXUVMwBfr/pub?gid=462296829&single=true&output=csv";
 
 // Dynamic Base Date
 const getBaseDateStr = () => getDynamicBaseDateStr();
 const LOCAL_STORAGE_KEY_API = 'gemini_api_key';
 
-type Tab = 'performance' | 'portfolio' | 'analysis' | 'planning' | 'diagnosis' | 'announcement';
+type Tab = 'performance' | 'portfolio' | 'analysis' | 'market_index' | 'holding_analysis' | 'announcement';
 
 const CACHE_KEY_DATA_1 = 'sheet_data_1_v6';
 const CACHE_KEY_DATA_2 = 'sheet_data_2_v6';
+const CACHE_KEY_DATA_3 = 'sheet_data_3_v6';
+const CACHE_KEY_DATA_4 = 'sheet_data_4_v6';
+const CACHE_KEY_DATA_5 = 'sheet_data_5_v6';
 const CACHE_KEY_TIME = 'sheet_last_fetch_time_v6';
 const CACHE_KEY_PORTFOLIO = 'user_portfolio_v1'; // 新增 Portfolio 儲存 Key
 const CACHE_DURATION = 15 * 60 * 1000; // 15 分鐘
@@ -50,6 +57,9 @@ const App: React.FC = () => {
 
   // Data State
   const [etfs, setEtfs] = useState<EtfData[]>([]);
+  const [twIndices, setTwIndices] = useState<MarketIndex[]>([]);
+  const [usIndices, setUsIndices] = useState<MarketIndex[]>([]);
+  const [stockDailyPrices, setStockDailyPrices] = useState<StockDailyPrice[]>([]);
   
   // 修改: 初始化時從 localStorage 讀取 portfolio
   const [portfolio, setPortfolio] = useState<PortfolioItem[]>(() => {
@@ -291,10 +301,15 @@ const App: React.FC = () => {
       return parseFloat(((totalEstimatedAmount / currentPrice) * 100).toFixed(2));
   };
 
-  const processData = useCallback((txt1: string, txt2: string) => {
+  const processData = useCallback((txt1: string, txt2: string, txt3: string, txt4: string, txt5: string) => {
       try {
           const parsedEtfs = parseEtfData(txt2);
           const dividendMap = parseDividendData(txt1);
+          
+          if (txt3) setTwIndices(parseMarketIndex(txt3));
+          if (txt4) setUsIndices(parseMarketIndex(txt4));
+          if (txt5) setStockDailyPrices(parseStockDailyPrice(txt5));
+
           const baseDateStr = getBaseDateStr();
           const baseDate = new Date(baseDateStr);
           const today = new Date();
@@ -353,20 +368,23 @@ const App: React.FC = () => {
       }
   }, [showToast]);
 
-  const handleStartDataLoad = useCallback(async (url1: string, url2: string, forceRefresh = false) => {
+  const handleStartDataLoad = useCallback(async (url1: string, url2: string, url3: string, url4: string, url5: string, forceRefresh = false) => {
     setIsLoading(true);
     try {
         const cachedTimeStr = localStorage.getItem(CACHE_KEY_TIME);
         const cachedData1 = localStorage.getItem(CACHE_KEY_DATA_1);
         const cachedData2 = localStorage.getItem(CACHE_KEY_DATA_2);
+        const cachedData3 = localStorage.getItem(CACHE_KEY_DATA_3) || '';
+        const cachedData4 = localStorage.getItem(CACHE_KEY_DATA_4) || '';
+        const cachedData5 = localStorage.getItem(CACHE_KEY_DATA_5) || '';
         
         const now = Date.now();
         const isCacheValid = cachedTimeStr && (now - Number(cachedTimeStr) < CACHE_DURATION);
 
-        if (!forceRefresh && isCacheValid && cachedData1 && cachedData2) {
+        if (!forceRefresh && isCacheValid && cachedData1 && cachedData2 && cachedData3 && cachedData4 && cachedData5) {
             console.log("Using Cached Data");
             try {
-              processData(cachedData1, cachedData2);
+              processData(cachedData1, cachedData2, cachedData3, cachedData4, cachedData5);
               setLastUpdated(new Date(Number(cachedTimeStr)));
               setIsLoading(false);
               return;
@@ -377,10 +395,22 @@ const App: React.FC = () => {
 
         const csvUrl1 = convertToCsvUrl(url1);
         const csvUrl2 = convertToCsvUrl(url2);
+        const csvUrl3 = url3 ? convertToCsvUrl(url3) : '';
+        const csvUrl4 = url4 ? convertToCsvUrl(url4) : '';
+        const csvUrl5 = url5 ? convertToCsvUrl(url5) : '';
 
-        const [txt1, txt2] = await Promise.all([
+        // Safe fetch function that won't throw if URL is empty or fetch fails
+        const safeFetch = (u: string) => u ? smartFetch(u).catch(e => {
+            console.warn(`Fetch failed for auxiliary URL ${u}`, e);
+            return '';
+        }) : Promise.resolve('');
+
+        const [txt1, txt2, txt3, txt4, txt5] = await Promise.all([
             smartFetch(csvUrl1),
-            smartFetch(csvUrl2)
+            smartFetch(csvUrl2),
+            safeFetch(csvUrl3),
+            safeFetch(csvUrl4),
+            safeFetch(csvUrl5)
         ]);
 
         if (txt1.trim().startsWith("<!DOCTYPE") || txt2.trim().startsWith("<!DOCTYPE")) {
@@ -389,9 +419,12 @@ const App: React.FC = () => {
 
         localStorage.setItem(CACHE_KEY_DATA_1, txt1);
         localStorage.setItem(CACHE_KEY_DATA_2, txt2);
+        localStorage.setItem(CACHE_KEY_DATA_3, txt3);
+        localStorage.setItem(CACHE_KEY_DATA_4, txt4);
+        localStorage.setItem(CACHE_KEY_DATA_5, txt5);
         localStorage.setItem(CACHE_KEY_TIME, now.toString());
 
-        processData(txt1, txt2);
+        processData(txt1, txt2, txt3, txt4, txt5);
         setLastUpdated(new Date(now));
 
     } catch (err: any) {
@@ -412,17 +445,20 @@ const App: React.FC = () => {
   useEffect(() => {
     const cachedData1 = localStorage.getItem(CACHE_KEY_DATA_1);
     const cachedData2 = localStorage.getItem(CACHE_KEY_DATA_2);
+    const cachedData3 = localStorage.getItem(CACHE_KEY_DATA_3) || '';
+    const cachedData4 = localStorage.getItem(CACHE_KEY_DATA_4) || '';
+    const cachedData5 = localStorage.getItem(CACHE_KEY_DATA_5) || '';
     const cachedTimeStr = localStorage.getItem(CACHE_KEY_TIME);
 
-    if (cachedData1 && cachedData2 && cachedTimeStr) {
+    if (cachedData1 && cachedData2 && cachedData3 && cachedData4 && cachedData5 && cachedTimeStr) {
         try {
-            processData(cachedData1, cachedData2);
+            processData(cachedData1, cachedData2, cachedData3, cachedData4, cachedData5);
             setLastUpdated(new Date(Number(cachedTimeStr)));
         } catch(e) {
-            handleStartDataLoad(DEFAULT_URL_1, DEFAULT_URL_2, true);
+            handleStartDataLoad(DEFAULT_URL_1, DEFAULT_URL_2, DEFAULT_URL_3, DEFAULT_URL_4, DEFAULT_URL_5, true);
         }
     } else {
-        handleStartDataLoad(DEFAULT_URL_1, DEFAULT_URL_2, true);
+        handleStartDataLoad(DEFAULT_URL_1, DEFAULT_URL_2, DEFAULT_URL_3, DEFAULT_URL_4, DEFAULT_URL_5, true);
     }
   }, [processData, handleStartDataLoad]);
 
@@ -576,7 +612,10 @@ const App: React.FC = () => {
                 <SheetConfigView 
                     defaultUrl1={DEFAULT_URL_1} 
                     defaultUrl2={DEFAULT_URL_2} 
-                    onStart={(u1, u2) => handleStartDataLoad(u1, u2, true)} 
+                    defaultUrl3={DEFAULT_URL_3}
+                    defaultUrl4={DEFAULT_URL_4}
+                    defaultUrl5={DEFAULT_URL_5}
+                    onStart={(u1, u2, u3, u4, u5) => handleStartDataLoad(u1, u2, u3, u4, u5, true)} 
                     isLoading={isLoading}
                 />
             </div>
@@ -614,112 +653,23 @@ const App: React.FC = () => {
                 />
              );
           
-          case 'planning':
+          case 'market_index':
             return (
                 <div className="h-full overflow-hidden">
-                    <PlanningView 
-                        etfs={etfs} 
-                        hasKey={!!apiKey}
-                        onOpenKeySettings={openKeyModal}
-                        onOpenHelp={() => setShowHelpModal(true)}
+                    <MarketIndexView 
+                        twIndices={twIndices} 
+                        usIndices={usIndices} 
                     />
                 </div>
             );
 
-          case 'diagnosis': 
+          case 'holding_analysis': 
             return (
-                <div className="h-full p-4 overflow-y-auto scrollbar-hide">
-                    {/* Control Card: 標題、金鑰設定、開始按鈕 */}
-                    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 mb-6 shrink-0">
-                        <div className="flex justify-between items-center mb-4 border-b border-slate-100 pb-2">
-                            <div className="flex items-center gap-2">
-                                <Bot className="w-8 h-8 text-blue-600" />
-                                {/* 修改: 字體加大至 text-3xl */}
-                                <h3 className="text-3xl font-bold text-slate-800">AI 智能診斷</h3>
-                            </div>
-                            <div className="flex items-center gap-1">
-                                <button 
-                                    onClick={openKeyModal}
-                                    className={`p-2 rounded-full transition-all ${!apiKey ? 'bg-yellow-100 text-yellow-600 animate-pulse ring-2 ring-yellow-300' : 'text-slate-400 hover:bg-slate-100 hover:text-blue-600'}`}
-                                    title={!apiKey ? "請設定 API Key" : "設定 API Key"}
-                                >
-                                    <Key className="w-5 h-5" />
-                                </button>
-                                <button 
-                                    onClick={() => setShowHelpModal(true)}
-                                    className="p-2 rounded-full text-slate-400 hover:bg-slate-100 hover:text-blue-600 transition-all"
-                                    title="說明文件"
-                                >
-                                    <CircleHelp className="w-5 h-5" />
-                                </button>
-                            </div>
-                        </div>
-
-                        <div className="space-y-5">
-                            <p className="text-slate-600 leading-relaxed text-base">
-                                AI 將針對您的「自組月配」投資組合進行深度分析，提供產業分散性、收益均衡度與防禦能力的專業診斷建議。
-                            </p>
-
-                            <button
-                                onClick={handleAIDiagnosis}
-                                disabled={isDiagnosing}
-                                className={`w-full py-3.5 rounded-xl font-bold text-white shadow-md flex items-center justify-center gap-2 text-lg transition-all active:scale-[0.98] ${
-                                    isDiagnosing 
-                                        ? 'bg-blue-400 cursor-not-allowed' 
-                                        : 'bg-blue-600 hover:bg-blue-700'
-                                }`}
-                            >
-                                {isDiagnosing ? (
-                                    <>
-                                        <RefreshCcw className="w-5 h-5 animate-spin" />
-                                        診斷運算中...
-                                    </>
-                                ) : (
-                                    <>
-                                        <Play className="w-5 h-5 fill-current" />
-                                        開始診斷
-                                    </>
-                                )}
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Result Area */}
-                    {diagnosis && (
-                        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 min-h-[200px] animate-[fadeIn_0.5s_ease-out] mb-6">
-                            <div className="prose prose-slate max-w-none">
-                                <ReactMarkdown 
-                                    remarkPlugins={[remarkGfm]}
-                                    components={{
-                                        // 修正：文字大小改為 text-lg (18px)
-                                        p: ({node, ...props}) => <p className="text-lg text-slate-700 leading-relaxed mb-4" {...props} />,
-                                        li: ({node, ...props}) => <li className="text-lg text-slate-700 leading-relaxed border-l-2 border-blue-200 pl-2 ml-1" {...props} />,
-                                        strong: ({node, ...props}) => <strong className="font-bold text-blue-900" {...props} />,
-
-                                        // 讓表格可以左右滑動的容器 (保留表格支援但 Prompt 要求 AI 不用)
-                                        table: ({node, ...props}) => (
-                                            <div className="overflow-x-auto my-4 border border-slate-200 rounded-lg shadow-sm">
-                                                <table className="min-w-full divide-y divide-slate-200" {...props} />
-                                            </div>
-                                        ),
-                                        thead: ({node, ...props}) => <thead className="bg-blue-50 text-blue-900 font-bold" {...props} />,
-                                        tbody: ({node, ...props}) => <tbody className="divide-y divide-slate-200 bg-white" {...props} />,
-                                        tr: ({node, ...props}) => <tr className="hover:bg-slate-50/50 transition-colors" {...props} />,
-                                        th: ({node, ...props}) => <th className="px-3 py-3 text-left text-sm font-bold uppercase tracking-wider whitespace-nowrap border-b border-blue-100 min-w-[60px]" {...props} />,
-                                        td: ({node, ...props}) => <td className="px-3 py-3 text-lg text-slate-700 border-b border-slate-100 min-w-[120px] align-top leading-relaxed" {...props} />,
-                                        
-                                        // 標題樣式
-                                        h1: ({node, ...props}) => <h1 className="text-2xl font-bold text-slate-900 mt-6 mb-4" {...props} />,
-                                        h2: ({node, ...props}) => <h2 className="text-xl font-bold text-slate-800 mt-5 mb-3 border-b pb-1 border-slate-100" {...props} />,
-                                        // H3 改為卡片式標籤
-                                        h3: ({node, ...props}) => <h3 className="text-xl font-bold text-white bg-blue-600 px-4 py-2 rounded-lg mt-6 mb-3 shadow-sm inline-block" {...props} />,
-                                    }}
-                                >
-                                    {diagnosis}
-                                </ReactMarkdown>
-                            </div>
-                        </div>
-                    )}
+                <div className="h-full overflow-hidden">
+                     <HoldingAnalysisView 
+                        portfolio={portfolio} 
+                        stockDailyPrices={stockDailyPrices} 
+                     />
                 </div>
             );
 
@@ -1027,11 +977,11 @@ const App: React.FC = () => {
             <button onClick={() => setActiveTab('portfolio')} className={`flex flex-col items-center justify-center h-full gap-1 transition-colors ${activeTab === 'portfolio' ? 'text-yellow-400' : 'text-slate-300 hover:text-white'}`}>
                 <PieChart className="w-5 h-5" /><span className="text-[10px] font-medium whitespace-nowrap">自組月配</span>
             </button>
-            <button onClick={() => setActiveTab('planning')} className={`flex flex-col items-center justify-center h-full gap-1 transition-colors ${activeTab === 'planning' ? 'text-yellow-400' : 'text-slate-300 hover:text-white'}`}>
-                <BrainCircuit className="w-5 h-5" /><span className="text-[10px] font-medium whitespace-nowrap">智慧規劃</span>
+            <button onClick={() => setActiveTab('market_index')} className={`flex flex-col items-center justify-center h-full gap-1 transition-colors ${activeTab === 'market_index' ? 'text-yellow-400' : 'text-slate-300 hover:text-white'}`}>
+                <Activity className="w-5 h-5" /><span className="text-[10px] font-medium whitespace-nowrap">大盤指數</span>
             </button>
-            <button onClick={() => setActiveTab('diagnosis')} className={`flex flex-col items-center justify-center h-full gap-1 transition-colors ${activeTab === 'diagnosis' ? 'text-yellow-400' : 'text-slate-300 hover:text-white'}`}>
-                <Bot className="w-5 h-5" /><span className="text-[10px] font-medium whitespace-nowrap">AI診斷</span>
+            <button onClick={() => setActiveTab('holding_analysis')} className={`flex flex-col items-center justify-center h-full gap-1 transition-colors ${activeTab === 'holding_analysis' ? 'text-yellow-400' : 'text-slate-300 hover:text-white'}`}>
+                <Briefcase className="w-5 h-5" /><span className="text-[10px] font-medium whitespace-nowrap">持股分析</span>
             </button>
             <button onClick={() => setActiveTab('announcement')} className={`flex flex-col items-center justify-center h-full gap-1 transition-colors ${activeTab === 'announcement' ? 'text-yellow-400' : 'text-slate-300 hover:text-white'}`}>
                 <Megaphone className="w-5 h-5" /><span className="text-[10px] font-medium whitespace-nowrap">配息公告</span>

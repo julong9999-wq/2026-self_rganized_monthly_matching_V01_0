@@ -1,5 +1,5 @@
 
-import { EtfData, CategoryKey, Dividend } from '../types';
+import { EtfData, CategoryKey, Dividend, MarketIndex, StockDailyPrice } from '../types';
 
 /**
  * Returns dynamic base date: first day of the same month in the previous year.
@@ -441,4 +441,122 @@ export const parseEtfData = (csvContent: string): EtfData[] => {
 
   etfs.sort((a, b) => a.code.localeCompare(b.code));
   return etfs;
+};
+
+const parseNum = (val: string) => {
+    if (!val) return 0;
+    const clean = val.replace(/[%$,]/g, '');
+    const num = parseFloat(clean);
+    return isNaN(num) ? 0 : num;
+};
+
+export const parseMarketIndex = (csvContent: string): MarketIndex[] => {
+  const lines = csvContent.split(/\r?\n/).filter(line => line.trim() !== '');
+  if (lines.length < 2) return [];
+
+  const results: MarketIndex[] = [];
+  
+  let headerRowIndex = 0;
+  let header = parseCSVRow(lines[0]).map(c => c.trim().toLowerCase());
+
+  if (!header.some(h => h.includes('指數名稱') || h.includes('name') || h.includes('代碼') || h.includes('code'))) {
+      for(let i=0; i<Math.min(lines.length, 5); i++) {
+          const rowValues = parseCSVRow(lines[i]);
+          const rowLower = rowValues.map(c => c.toLowerCase());
+          
+          if (rowLower.some(c => c.includes('指數名稱') || c.includes('name') || c.includes('代碼') || c.includes('code'))) {
+              headerRowIndex = i;
+              header = rowLower;
+              break;
+          }
+      }
+  }
+
+  const findCol = (keywords: string[]) => header.findIndex(h => keywords.some(k => h.includes(k)));
+
+  const idxName = findCol(['指數名稱', 'name', '名稱', '指數']);
+  const idxCode = findCol(['代碼', 'code', 'symbol']);
+  const idxDate = findCol(['日期', 'date', 'tradetime', '時間']);
+  const idxYest = findCol(['昨日收盤', 'closeyest', '昨日', '昨收']);
+  const idxOpen = findCol(['開盤', 'priceopen', 'open']);
+  const idxHigh = findCol(['高價', 'high', '最高']);
+  const idxLow = findCol(['低價', 'low', '最低']);
+  const idxPrice = findCol(['現價', 'price', '收盤', '收盤價']);
+  const idxVol = findCol(['成交量', 'volume', '成交']);
+  const idxChange = findCol(['漲跌點數', 'change', '漲跌']);
+  const idxChangePct = findCol(['漲跌幅度', '幅度', 'percent', '漲跌幅']);
+
+  for (let i = headerRowIndex + 1; i < lines.length; i++) {
+      const row = parseCSVRow(lines[i]);
+      // Relax condition to allow missing columns at the end, just check if we have enough
+      if (row.length < 2) continue;
+
+      results.push({
+          name: idxName !== -1 ? row[idxName] || '' : '',
+          code: idxCode !== -1 ? row[idxCode] || '' : '',
+          date: idxDate !== -1 ? row[idxDate] || '' : '',
+          priceYest: idxYest !== -1 ? parseNum(row[idxYest]) : 0,
+          priceOpen: idxOpen !== -1 ? parseNum(row[idxOpen]) : 0,
+          priceHigh: idxHigh !== -1 ? parseNum(row[idxHigh]) : 0,
+          priceLow: idxLow !== -1 ? parseNum(row[idxLow]) : 0,
+          priceCurrent: idxPrice !== -1 ? parseNum(row[idxPrice]) : 0,
+          volume: idxVol !== -1 ? parseNum(row[idxVol]) : 0,
+          changePoint: idxChange !== -1 ? parseNum(row[idxChange]) : 0,
+          changePercent: idxChangePct !== -1 ? parseNum(row[idxChangePct]) : 0,
+      });
+  }
+
+  return results;
+};
+
+export const parseStockDailyPrice = (csvContent: string): StockDailyPrice[] => {
+  const lines = csvContent.split(/\r?\n/).filter(line => line.trim() !== '');
+  if (lines.length < 2) return [];
+
+  const results: StockDailyPrice[] = [];
+  
+  let headerRowIndex = 0;
+  let header = parseCSVRow(lines[0]).map(c => c.trim().toLowerCase());
+
+  if (!header.some(h => h.includes('名稱') || h.includes('name') || h.includes('代碼') || h.includes('code'))) {
+      for(let i=0; i<Math.min(lines.length, 5); i++) {
+          const rowValues = parseCSVRow(lines[i]);
+          const rowLower = rowValues.map(c => c.toLowerCase());
+          
+          if (rowLower.some(c => c.includes('名稱') || c.includes('name') || c.includes('代碼') || c.includes('code'))) {
+              headerRowIndex = i;
+              header = rowLower;
+              break;
+          }
+      }
+  }
+
+  const findCol = (keywords: string[]) => header.findIndex(h => keywords.some(k => h.includes(k)));
+
+  const idxCode = findCol(['etf 代碼', '代碼', 'code', 'symbol', '股票代號']);
+  const idxName = findCol(['etf 名稱', '名稱', 'name']);
+  const idxDate = findCol(['日期', 'date']);
+  const idxYest = findCol(['昨日收盤價', '昨日收盤', '昨收', '昨日']);
+  const idxOpen = findCol(['開盤', 'open']);
+  const idxHigh = findCol(['最高', 'high', '高價']);
+  const idxLow = findCol(['最低', 'low', '低價']);
+  const idxPrice = findCol(['股價', '現價', '收盤價', 'price', '收盤', '成交']);
+
+  for (let i = headerRowIndex + 1; i < lines.length; i++) {
+      const row = parseCSVRow(lines[i]);
+      if (row.length < 2) continue;
+
+      results.push({
+          code: idxCode !== -1 ? row[idxCode] || '' : '',
+          name: idxName !== -1 ? row[idxName] || '' : '',
+          date: idxDate !== -1 ? row[idxDate] || '' : '',
+          priceYest: idxYest !== -1 ? parseNum(row[idxYest]) : 0,
+          priceOpen: idxOpen !== -1 ? parseNum(row[idxOpen]) : 0,
+          priceHigh: idxHigh !== -1 ? parseNum(row[idxHigh]) : 0,
+          priceLow: idxLow !== -1 ? parseNum(row[idxLow]) : 0,
+          priceCurrent: idxPrice !== -1 ? parseNum(row[idxPrice]) : 0,
+      });
+  }
+
+  return results;
 };

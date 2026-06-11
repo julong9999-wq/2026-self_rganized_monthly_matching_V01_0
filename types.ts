@@ -52,3 +52,28 @@ export interface AnalysisResult {
   text: string;
   isStreaming: boolean;
 }
+
+export interface MarketIndex {
+  name: string;
+  code: string;
+  date: string;
+  priceYest: number;
+  priceOpen: number;
+  priceHigh: number;
+  priceLow: number;
+  priceCurrent: number;
+  volume: number;
+  changePoint: number;
+  changePercent: number;
+}
+
+export interface StockDailyPrice {
+  code: string;
+  name: string;
+  date: string;
+  priceYest: number;
+  priceOpen: number;
+  priceHigh: number;
+  priceLow: number;
+  priceCurrent: number;
+}

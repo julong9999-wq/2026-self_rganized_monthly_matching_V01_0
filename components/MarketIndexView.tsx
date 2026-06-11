@@ -54,7 +54,11 @@ const MarketIndexView: React.FC<Props> = ({ twIndices, usIndices }) => {
 
     const stats: any[] = [];
     INDEX_ORDER.forEach(idxName => {
-        const idxData = recentData.filter(d => d.name === idxName).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        const idxData = recentData.filter(d => d.name === idxName).sort((a, b) => {
+            const timeA = new Date(a.date.replace(/[-.]/g, '/')).getTime();
+            const timeB = new Date(b.date.replace(/[-.]/g, '/')).getTime();
+            return timeA - timeB;
+        });
         if (idxData.length === 0) return;
 
         const latestData = idxData[idxData.length - 1];
@@ -180,16 +184,16 @@ const MarketIndexView: React.FC<Props> = ({ twIndices, usIndices }) => {
        const ticks = transformed.length > 0 ? [transformed[0].displayDate, transformed[transformed.length-1].displayDate] : [];
 
        return (
-           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-2 mb-4">
-              <div className="flex items-center gap-2 mb-2 px-2">
+           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-1.5 mb-2">
+              <div className="flex items-center gap-2 mb-1 px-1">
                   <div className="w-3 h-3 rounded-full" style={{ backgroundColor: color }} />
                   <h3 className="text-sm font-bold text-slate-800">{title}</h3>
               </div>
               <div className="w-full aspect-video">
                   <ResponsiveContainer width="100%" height="100%">
-                      <ComposedChart data={transformed} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
-                          <XAxis dataKey="displayDate" ticks={ticks} tick={{ fontSize: 10, fill: '#94a3b8' }} tickLine={false} axisLine={false} />
-                          <YAxis domain={[minVal, maxVal]} tick={{ fontSize: 10, fill: '#94a3b8' }} tickLine={false} axisLine={false} width={35} tickFormatter={(val) => Math.round(val).toLocaleString()} />
+                      <ComposedChart data={transformed} margin={{ top: 2, right: 2, left: -20, bottom: 0 }}>
+                          <XAxis dataKey="displayDate" ticks={ticks} tick={{ fontSize: 9, fill: '#94a3b8' }} tickLine={false} axisLine={false} />
+                          <YAxis domain={[minVal, maxVal]} tick={{ fontSize: 9, fill: '#94a3b8' }} tickLine={false} axisLine={false} width={35} tickFormatter={(val) => Math.round(val).toLocaleString()} />
                           <Tooltip 
                               contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                               formatter={(value: any, name: any, props: any) => {
@@ -211,6 +215,7 @@ const MarketIndexView: React.FC<Props> = ({ twIndices, usIndices }) => {
   const pctColor = (val: number) => val > 0 ? 'text-red-500' : val < 0 ? 'text-green-500' : 'text-slate-500';
   const valColor = (val: number) => val > 0 ? 'text-red-600' : val < 0 ? 'text-green-600' : 'text-slate-600';
   const prefix = (val: number) => val > 0 ? '+' : '';
+  const fmtPrice = (val: number) => val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   if (!data || data.stats.length === 0) return <div className="p-4 text-center text-slate-500">無大盤資料</div>;
 
@@ -218,22 +223,22 @@ const MarketIndexView: React.FC<Props> = ({ twIndices, usIndices }) => {
     <div className="h-full p-2 overflow-y-auto scrollbar-hide bg-slate-50">
         
         {/* Comparison Line Chart */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-2 mb-4 mt-2">
-            <div className="flex items-baseline gap-2 mb-2 px-2">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-1.5 mb-2 mt-1">
+            <div className="flex items-baseline gap-2 mb-1 px-1">
                <h3 className="text-sm font-bold text-slate-800">漲跌幅比較</h3>
                <span className="text-xs text-slate-400">同一起跑點</span>
             </div>
             
             <div className="w-full aspect-video flex flex-col">
                 <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={data.comparisonData} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
+                    <LineChart data={data.comparisonData} margin={{ top: 2, right: 2, left: -20, bottom: 0 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                         <XAxis 
                             dataKey="date" 
                             ticks={data.comparisonData.length > 0 ? [data.comparisonData[0].date, data.comparisonData[data.comparisonData.length-1].date] : []} 
-                            tick={{ fontSize: 10, fill: '#94a3b8' }} tickLine={false} axisLine={false} 
+                            tick={{ fontSize: 9, fill: '#94a3b8' }} tickLine={false} axisLine={false} 
                         />
-                        <YAxis width={30} tickFormatter={(val) => `${Math.round(val)}%`} tick={{ fontSize: 10, fill: '#94a3b8' }} tickLine={false} axisLine={false} />
+                        <YAxis width={30} tickFormatter={(val) => `${Math.round(val)}%`} tick={{ fontSize: 9, fill: '#94a3b8' }} tickLine={false} axisLine={false} />
                         <Tooltip 
                             formatter={(value: any, name: any) => [`${Number(value).toFixed(2)}%`, name]}
                             labelFormatter={(label) => `日期: ${label}`}
@@ -262,12 +267,12 @@ const MarketIndexView: React.FC<Props> = ({ twIndices, usIndices }) => {
         </div>
 
         {/* Tab Controls for Tables */}
-        <div className="flex gap-2 mb-4 bg-white p-1 rounded-xl shadow-sm border border-slate-200 sticky top-0 z-10 w-full overflow-x-auto scrollbar-hide">
+        <div className="flex gap-2 mb-2 bg-white p-1 rounded-xl shadow-sm border border-slate-200 sticky top-0 z-10 w-full overflow-x-auto scrollbar-hide">
             {['最新', '振幅', '反彈', '下跌'].map(tab => (
                  <button
                     key={tab}
                     onClick={() => setActiveTab(tab as any)}
-                    className={`flex-1 min-w-[60px] py-2 text-xs font-bold rounded-lg transition-colors ${activeTab === tab ? 'bg-blue-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-100'}`}
+                    className={`flex-1 flex justify-center py-1.5 text-xs font-bold rounded-lg transition-colors ${activeTab === tab ? 'bg-blue-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-100'}`}
                  >
                      {tab}
                  </button>
@@ -275,7 +280,7 @@ const MarketIndexView: React.FC<Props> = ({ twIndices, usIndices }) => {
         </div>
 
         {/* Stats Table Area */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-4">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-2">
             <table className="w-full text-xs text-slate-700">
                 <tbody className="divide-y divide-slate-100">
                     {data.stats.map(s => (
@@ -295,29 +300,35 @@ const MarketIndexView: React.FC<Props> = ({ twIndices, usIndices }) => {
                                 {activeTab === '振幅' && (
                                     <>
                                         <td className="px-2 py-1.5 whitespace-nowrap text-center">{s.dateMax}</td>
-                                        <td className="px-2 py-1.5 text-right font-medium text-slate-800 whitespace-nowrap">{s.maxClose.toLocaleString()}</td>
-                                        <td className="px-2 py-1.5 font-bold text-slate-400 border-l border-slate-100 text-center whitespace-nowrap">振幅</td>
+                                        <td className="px-2 py-1.5 text-right font-medium text-slate-800 whitespace-nowrap">{fmtPrice(s.maxClose)}</td>
+                                        <td className="px-2 py-1.5 font-bold border-l border-slate-100 text-center whitespace-nowrap text-blue-600">
+                                            {fmtPrice(s.maxClose - s.minClose)}
+                                        </td>
                                     </>
                                 )}
                                 {activeTab === '反彈' && (
                                     <>
                                         <td className="px-2 py-1.5 whitespace-nowrap text-center">{s.dateMin}</td>
-                                        <td className="px-2 py-1.5 text-right font-medium text-slate-800 whitespace-nowrap">{s.minClose.toLocaleString()}</td>
-                                        <td className="px-2 py-1.5 font-bold text-slate-400 border-l border-slate-100 text-center whitespace-nowrap">反彈</td>
+                                        <td className="px-2 py-1.5 text-right font-medium text-slate-800 whitespace-nowrap">{fmtPrice(s.minClose)}</td>
+                                        <td className={`px-2 py-1.5 font-bold border-l border-slate-100 text-center whitespace-nowrap ${valColor(s.latestPrice - s.minClose)}`}>
+                                            {prefix(s.latestPrice - s.minClose)}{fmtPrice(s.latestPrice - s.minClose)}
+                                        </td>
                                     </>
                                 )}
                                 {activeTab === '下跌' && (
                                     <>
                                         <td className="px-2 py-1.5 whitespace-nowrap text-center">{s.dateMax}</td>
-                                        <td className="px-2 py-1.5 text-right font-medium text-slate-800 whitespace-nowrap">{s.maxClose.toLocaleString()}</td>
-                                        <td className="px-2 py-1.5 font-bold text-slate-400 border-l border-slate-100 text-center whitespace-nowrap">下跌</td>
+                                        <td className="px-2 py-1.5 text-right font-medium text-slate-800 whitespace-nowrap">{fmtPrice(s.maxClose)}</td>
+                                        <td className={`px-2 py-1.5 font-bold border-l border-slate-100 text-center whitespace-nowrap ${valColor(s.latestPrice - s.maxClose)}`}>
+                                            {prefix(s.latestPrice - s.maxClose)}{fmtPrice(s.latestPrice - s.maxClose)}
+                                        </td>
                                     </>
                                 )}
                             </tr>
                             <tr className="bg-white">
                                 {activeTab === '最新' && (
                                     <>
-                                        <td className="px-2 py-1.5 font-medium text-slate-800 text-center whitespace-nowrap">{s.latestPrice.toLocaleString()}</td>
+                                        <td className="px-2 py-1.5 font-medium text-slate-800 text-center whitespace-nowrap">{fmtPrice(s.latestPrice)}</td>
                                         <td className={`px-2 py-1.5 text-right font-medium whitespace-nowrap ${pctColor(s.dailyChangePct)}`}>
                                             {prefix(s.dailyChangePct)}{s.dailyChangePct.toFixed(2)}%
                                         </td>
@@ -326,7 +337,7 @@ const MarketIndexView: React.FC<Props> = ({ twIndices, usIndices }) => {
                                 {activeTab === '振幅' && (
                                     <>
                                         <td className="px-2 py-1.5 whitespace-nowrap text-center">{s.dateMin}</td>
-                                        <td className="px-2 py-1.5 text-right font-medium text-slate-800 whitespace-nowrap">{s.minClose.toLocaleString()}</td>
+                                        <td className="px-2 py-1.5 text-right font-medium text-slate-800 whitespace-nowrap">{fmtPrice(s.minClose)}</td>
                                         <td className={`px-2 py-1.5 font-bold text-blue-600 border-l border-slate-100 text-center whitespace-nowrap`}>
                                             {s.amplitudePct.toFixed(2)}%
                                         </td>
@@ -335,7 +346,7 @@ const MarketIndexView: React.FC<Props> = ({ twIndices, usIndices }) => {
                                 {activeTab === '反彈' && (
                                     <>
                                         <td className="px-2 py-1.5 text-blue-600 font-bold whitespace-nowrap text-center">{s.latestDate}</td>
-                                        <td className="px-2 py-1.5 text-right font-medium text-blue-600 whitespace-nowrap">{s.latestPrice.toLocaleString()}</td>
+                                        <td className="px-2 py-1.5 text-right font-medium text-blue-600 whitespace-nowrap">{fmtPrice(s.latestPrice)}</td>
                                         <td className={`px-2 py-1.5 font-bold border-l border-slate-100 text-center whitespace-nowrap ${valColor(s.reboundPct)}`}>
                                             {prefix(s.reboundPct)}{s.reboundPct.toFixed(2)}%
                                         </td>
@@ -344,7 +355,7 @@ const MarketIndexView: React.FC<Props> = ({ twIndices, usIndices }) => {
                                 {activeTab === '下跌' && (
                                     <>
                                         <td className="px-2 py-1.5 text-blue-600 font-bold whitespace-nowrap text-center">{s.latestDate}</td>
-                                        <td className="px-2 py-1.5 text-right font-medium text-blue-600 whitespace-nowrap">{s.latestPrice.toLocaleString()}</td>
+                                        <td className="px-2 py-1.5 text-right font-medium text-blue-600 whitespace-nowrap">{fmtPrice(s.latestPrice)}</td>
                                         <td className={`px-2 py-1.5 font-bold border-l border-slate-100 text-center whitespace-nowrap ${valColor(s.drawdownPct)}`}>
                                             {prefix(s.drawdownPct)}{s.drawdownPct.toFixed(2)}%
                                         </td>

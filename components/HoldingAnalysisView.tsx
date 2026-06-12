@@ -22,11 +22,11 @@ const PercentBar = ({ value, max, colorClass }: { value: number, max: number, co
     const width = Math.min(100, (Math.abs(value) / max) * 100);
     const prefix = value > 0 ? '+' : '';
     return (
-        <div className="flex items-center gap-1.5 w-full justify-between">
-            <div className="w-12 h-1.5 bg-slate-100 rounded-sm overflow-hidden flex">
+        <div className="flex items-center gap-1.5 w-full justify-end">
+            <div className="w-10 h-1.5 bg-slate-100 rounded-sm overflow-hidden flex flex-shrink-0">
                  <div className={`h-full ${colorClass.replace('text-', 'bg-')}`} style={{ width: `${width}%` }} />
             </div>
-            <span className={`text-right ${colorClass}`}>{prefix}{value.toFixed(2)}%</span>
+            <span className={`text-right flex-shrink-0 min-w-[45px] text-[11px] font-bold ${colorClass}`}>{prefix}{value.toFixed(2)}%</span>
         </div>
     );
 };
@@ -116,6 +116,7 @@ const HoldingAnalysisView: React.FC<Props> = ({ portfolio, stockDailyPrices }) =
         
         const latestPrice = latestData.priceCurrent;
         const latestDate = formatDateYMD(latestData.date);
+        const prevDate = formatDateYMD(prevData.date);
         const dailyChange = latestPrice - prevData.priceCurrent;
         const dailyChangePct = prevData.priceCurrent ? (dailyChange / prevData.priceCurrent) * 100 : 0;
 
@@ -145,6 +146,7 @@ const HoldingAnalysisView: React.FC<Props> = ({ portfolio, stockDailyPrices }) =
             code: code,
             name: name,
             latestDate,
+            prevDate,
             latestPrice,
             dailyChange,
             dailyChangePct,
@@ -359,15 +361,17 @@ const HoldingAnalysisView: React.FC<Props> = ({ portfolio, stockDailyPrices }) =
                                 )}
                             </tr>
                             <tr className="bg-white hover:bg-slate-50 cursor-pointer" onClick={() => setSelectedETF(s)}>
-                                <td className="px-2 py-1.5 font-bold text-slate-500 text-[12px] align-middle w-24 border-r border-slate-100 whitespace-nowrap text-left">
+                                <td className="px-2 py-1.5 font-normal text-slate-500 text-[12px] align-middle w-24 border-r border-slate-100 whitespace-nowrap text-left">
                                     {s.name}
                                 </td>
                                 {activeTab === '最新' && (
                                     <>
-                                        <td className="px-2 py-1.5 whitespace-nowrap text-left text-slate-500">昨收</td>
+                                        <td className="px-2 py-1.5 whitespace-nowrap text-left text-slate-500">{s.prevDate}</td>
                                         <td className="px-2 py-1.5 text-right font-medium text-slate-500 whitespace-nowrap">{fmtPrice(s.latestPrice - s.dailyChange)}</td>
                                         <td className={`px-2 py-1.5 font-bold whitespace-nowrap`}>
-                                            <PercentBar value={s.dailyChangePct} max={maxDailyChangePct} colorClass={pctColor(s.dailyChangePct)} />
+                                            <div className="w-[85px] ml-auto">
+                                                <PercentBar value={s.dailyChangePct} max={maxDailyChangePct} colorClass={pctColor(s.dailyChangePct)} />
+                                            </div>
                                         </td>
                                     </>
                                 )}
@@ -376,7 +380,9 @@ const HoldingAnalysisView: React.FC<Props> = ({ portfolio, stockDailyPrices }) =
                                         <td className="px-2 py-1.5 whitespace-nowrap text-left text-slate-500">{s.dateMin}</td>
                                         <td className="px-2 py-1.5 text-right font-medium text-slate-500 whitespace-nowrap">{fmtPrice(s.minClose)}</td>
                                         <td className={`px-2 py-1.5 font-bold whitespace-nowrap`}>
-                                            <PercentBar value={s.amplitudePct} max={maxAmplitudePct} colorClass="text-blue-600" />
+                                            <div className="w-[85px] ml-auto">
+                                                <PercentBar value={s.amplitudePct} max={maxAmplitudePct} colorClass="text-blue-600" />
+                                            </div>
                                         </td>
                                     </>
                                 )}
@@ -385,7 +391,9 @@ const HoldingAnalysisView: React.FC<Props> = ({ portfolio, stockDailyPrices }) =
                                         <td className="px-2 py-1.5 whitespace-nowrap text-left text-slate-500">{s.latestDate}</td>
                                         <td className="px-2 py-1.5 text-right font-medium text-slate-500 whitespace-nowrap">{fmtPrice(s.latestPrice)}</td>
                                         <td className={`px-2 py-1.5 font-bold whitespace-nowrap`}>
-                                            <PercentBar value={s.reboundPct} max={maxReboundPct} colorClass={pctColor(s.reboundPct)} />
+                                            <div className="w-[85px] ml-auto">
+                                                <PercentBar value={s.reboundPct} max={maxReboundPct} colorClass={pctColor(s.reboundPct)} />
+                                            </div>
                                         </td>
                                     </>
                                 )}
@@ -394,7 +402,9 @@ const HoldingAnalysisView: React.FC<Props> = ({ portfolio, stockDailyPrices }) =
                                         <td className="px-2 py-1.5 whitespace-nowrap text-left text-slate-500">{s.latestDate}</td>
                                         <td className="px-2 py-1.5 text-right font-medium text-slate-500 whitespace-nowrap">{fmtPrice(s.latestPrice)}</td>
                                         <td className={`px-2 py-1.5 font-bold whitespace-nowrap`}>
-                                            <PercentBar value={s.drawdownPct} max={maxDrawdownPct} colorClass={pctColor(s.drawdownPct)} />
+                                            <div className="w-[85px] ml-auto">
+                                                <PercentBar value={s.drawdownPct} max={maxDrawdownPct} colorClass={pctColor(s.drawdownPct)} />
+                                            </div>
                                         </td>
                                     </>
                                 )}

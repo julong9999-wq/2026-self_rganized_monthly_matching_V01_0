@@ -477,11 +477,11 @@ export const parseMarketIndex = (csvContent: string): MarketIndex[] => {
   const idxName = findCol(['指數名稱', 'name', '名稱', '指數']);
   const idxCode = findCol(['代碼', 'code', 'symbol']);
   const idxDate = findCol(['日期', 'date', 'tradetime', '時間']);
-  const idxYest = findCol(['昨日收盤', 'closeyest', '昨日', '昨收']);
+  const idxYest = findCol(['昨日收盤價', '昨日收盤', 'closeyest', '昨日', '昨收']);
   const idxOpen = findCol(['開盤', 'priceopen', 'open']);
-  const idxHigh = findCol(['高價', 'high', '最高']);
-  const idxLow = findCol(['低價', 'low', '最低']);
-  const idxPrice = findCol(['現價', '收盤價']) !== -1 ? findCol(['現價', '收盤價']) : findCol(['收盤', 'price_c']);
+  const idxHigh = findCol(['最高', '高價', 'high']);
+  const idxLow = findCol(['最低', '低價', 'low']);
+  const idxPrice = findCol(['最新股價', '股價', '現價', '收盤價', '收盤', 'price_c', 'priceCurrent']);
   const idxVol = findCol(['成交量', 'volume', '成交']);
   const idxChange = findCol(['漲跌點數', 'change', '漲跌']);
   const idxChangePct = findCol(['漲跌幅度', '幅度', 'percent', '漲跌幅']);
@@ -540,7 +540,7 @@ export const parseStockDailyPrice = (csvContent: string): StockDailyPrice[] => {
   const idxOpen = findCol(['開盤', 'open']);
   const idxHigh = findCol(['最高', 'high', '高價']);
   const idxLow = findCol(['最低', 'low', '低價']);
-  const idxPrice = findCol(['股價', '現價', '收盤價']) !== -1 ? findCol(['股價', '現價', '收盤價']) : findCol(['收盤']);
+  const idxPrice = findCol(['最新股價', '股價', '現價', '收盤價', '收盤', 'priceCurrent', 'price']);
 
   for (let i = headerRowIndex + 1; i < lines.length; i++) {
       const row = parseCSVRow(lines[i]);

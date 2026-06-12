@@ -317,59 +317,55 @@ const HoldingAnalysisView: React.FC<Props> = ({ portfolio, stockDailyPrices }) =
                 <tbody className="divide-y divide-slate-100">
                     {sortedStats.map(s => (
                         <React.Fragment key={s.code}>
-                            <tr className="bg-slate-50/50">
-                                <td 
-                                    rowSpan={2} 
-                                    className="px-2 py-2 font-bold text-slate-800 align-middle w-12 border-r border-slate-100 whitespace-nowrap text-center cursor-pointer hover:bg-slate-100"
-                                    onClick={() => setSelectedETF(s)}
-                                >
-                                    <div className="flex flex-col items-center">
-                                       <span className="text-[10px] text-slate-400 font-medium">{s.code}</span>
-                                       <span>{s.name}</span>
-                                    </div>
+                            <tr className="bg-slate-50/50 hover:bg-slate-100 cursor-pointer" onClick={() => setSelectedETF(s)}>
+                                <td className="px-2 py-1.5 font-bold text-black text-[14px] align-middle w-24 border-r border-slate-100 whitespace-nowrap text-left">
+                                    {s.code}
                                 </td>
                                 {activeTab === '最新' && (
                                     <>
-                                        <td className="px-2 py-1.5 font-medium text-slate-800 text-center whitespace-nowrap">{fmtPrice(s.latestPrice)}</td>
-                                        <td className="px-2 py-1.5 whitespace-nowrap text-center text-slate-500">{s.latestDate}</td>
-                                        <td className={`px-2 py-1.5 text-center font-bold border-l border-slate-100 whitespace-nowrap ${valColor(s.dailyChange)}`}>
+                                        <td className="px-2 py-1.5 whitespace-nowrap text-left text-slate-500">{s.latestDate}</td>
+                                        <td className="px-2 py-1.5 font-medium text-slate-500 text-right whitespace-nowrap">{fmtPrice(s.latestPrice)}</td>
+                                        <td className={`px-2 py-1.5 text-left font-bold border-l border-slate-100 whitespace-nowrap ${valColor(s.dailyChange)}`}>
                                             {prefix(s.dailyChange)}{s.dailyChange.toFixed(2)}
                                         </td>
                                     </>
                                 )}
                                 {activeTab === '振幅' && (
                                     <>
-                                        <td className="px-2 py-1.5 whitespace-nowrap text-center text-slate-500">{s.dateMax}</td>
-                                        <td className="px-2 py-1.5 text-right font-medium text-slate-800 whitespace-nowrap">{fmtPrice(s.maxClose)}</td>
-                                        <td className="px-2 py-1.5 font-bold border-l border-slate-100 text-center whitespace-nowrap text-blue-600">
+                                        <td className="px-2 py-1.5 whitespace-nowrap text-left text-slate-500">{s.dateMax}</td>
+                                        <td className="px-2 py-1.5 text-right font-medium text-slate-500 whitespace-nowrap">{fmtPrice(s.maxClose)}</td>
+                                        <td className="px-2 py-1.5 font-bold border-l border-slate-100 text-left whitespace-nowrap text-blue-600">
                                             {fmtPrice(s.maxClose - s.minClose)}
                                         </td>
                                     </>
                                 )}
                                 {activeTab === '反彈' && (
                                     <>
-                                        <td className="px-2 py-1.5 whitespace-nowrap text-center text-slate-500">{s.dateMin}</td>
-                                        <td className="px-2 py-1.5 text-right font-medium text-slate-800 whitespace-nowrap">{fmtPrice(s.minClose)}</td>
-                                        <td className={`px-2 py-1.5 font-bold border-l border-slate-100 text-center whitespace-nowrap ${valColor(s.latestPrice - s.minClose)}`}>
+                                        <td className="px-2 py-1.5 whitespace-nowrap text-left text-slate-500">{s.dateMin}</td>
+                                        <td className="px-2 py-1.5 text-right font-medium text-slate-500 whitespace-nowrap">{fmtPrice(s.minClose)}</td>
+                                        <td className={`px-2 py-1.5 font-bold border-l border-slate-100 text-left whitespace-nowrap ${valColor(s.latestPrice - s.minClose)}`}>
                                             {prefix(s.latestPrice - s.minClose)}{fmtPrice(s.latestPrice - s.minClose)}
                                         </td>
                                     </>
                                 )}
                                 {activeTab === '下跌' && (
                                     <>
-                                        <td className="px-2 py-1.5 whitespace-nowrap text-center text-slate-500">{s.dateMax}</td>
-                                        <td className="px-2 py-1.5 text-right font-medium text-slate-800 whitespace-nowrap">{fmtPrice(s.maxClose)}</td>
-                                        <td className={`px-2 py-1.5 font-bold border-l border-slate-100 text-center whitespace-nowrap ${valColor(s.latestPrice - s.maxClose)}`}>
+                                        <td className="px-2 py-1.5 whitespace-nowrap text-left text-slate-500">{s.dateMax}</td>
+                                        <td className="px-2 py-1.5 text-right font-medium text-slate-500 whitespace-nowrap">{fmtPrice(s.maxClose)}</td>
+                                        <td className={`px-2 py-1.5 font-bold border-l border-slate-100 text-left whitespace-nowrap ${valColor(s.latestPrice - s.maxClose)}`}>
                                             {prefix(s.latestPrice - s.maxClose)}{fmtPrice(s.latestPrice - s.maxClose)}
                                         </td>
                                     </>
                                 )}
                             </tr>
-                            <tr className="bg-white">
+                            <tr className="bg-white hover:bg-slate-50 cursor-pointer" onClick={() => setSelectedETF(s)}>
+                                <td className="px-2 py-1.5 font-bold text-slate-500 text-[12px] align-middle w-24 border-r border-slate-100 whitespace-nowrap text-left">
+                                    {s.name}
+                                </td>
                                 {activeTab === '最新' && (
                                     <>
-                                        <td className="px-2 py-1.5 whitespace-nowrap text-center text-slate-500">昨收</td>
-                                        <td className="px-2 py-1.5 text-center font-medium text-slate-500 whitespace-nowrap">{fmtPrice(s.latestPrice - s.dailyChange)}</td>
+                                        <td className="px-2 py-1.5 whitespace-nowrap text-left text-slate-500">昨收</td>
+                                        <td className="px-2 py-1.5 text-right font-medium text-slate-500 whitespace-nowrap">{fmtPrice(s.latestPrice - s.dailyChange)}</td>
                                         <td className={`px-2 py-1.5 font-bold whitespace-nowrap`}>
                                             <PercentBar value={s.dailyChangePct} max={maxDailyChangePct} colorClass={pctColor(s.dailyChangePct)} />
                                         </td>
@@ -377,8 +373,8 @@ const HoldingAnalysisView: React.FC<Props> = ({ portfolio, stockDailyPrices }) =
                                 )}
                                 {activeTab === '振幅' && (
                                     <>
-                                        <td className="px-2 py-1.5 whitespace-nowrap text-center text-slate-500">{s.dateMin}</td>
-                                        <td className="px-2 py-1.5 text-right font-medium text-slate-800 whitespace-nowrap">{fmtPrice(s.minClose)}</td>
+                                        <td className="px-2 py-1.5 whitespace-nowrap text-left text-slate-500">{s.dateMin}</td>
+                                        <td className="px-2 py-1.5 text-right font-medium text-slate-500 whitespace-nowrap">{fmtPrice(s.minClose)}</td>
                                         <td className={`px-2 py-1.5 font-bold whitespace-nowrap`}>
                                             <PercentBar value={s.amplitudePct} max={maxAmplitudePct} colorClass="text-blue-600" />
                                         </td>
@@ -386,8 +382,8 @@ const HoldingAnalysisView: React.FC<Props> = ({ portfolio, stockDailyPrices }) =
                                 )}
                                 {activeTab === '反彈' && (
                                     <>
-                                        <td className="px-2 py-1.5 whitespace-nowrap text-center text-slate-500">{s.latestDate}</td>
-                                        <td className="px-2 py-1.5 text-right font-medium text-blue-600 whitespace-nowrap">{fmtPrice(s.latestPrice)}</td>
+                                        <td className="px-2 py-1.5 whitespace-nowrap text-left text-slate-500">{s.latestDate}</td>
+                                        <td className="px-2 py-1.5 text-right font-medium text-slate-500 whitespace-nowrap">{fmtPrice(s.latestPrice)}</td>
                                         <td className={`px-2 py-1.5 font-bold whitespace-nowrap`}>
                                             <PercentBar value={s.reboundPct} max={maxReboundPct} colorClass={pctColor(s.reboundPct)} />
                                         </td>
@@ -395,8 +391,8 @@ const HoldingAnalysisView: React.FC<Props> = ({ portfolio, stockDailyPrices }) =
                                 )}
                                 {activeTab === '下跌' && (
                                     <>
-                                        <td className="px-2 py-1.5 whitespace-nowrap text-center text-slate-500">{s.latestDate}</td>
-                                        <td className="px-2 py-1.5 text-right font-medium text-blue-600 whitespace-nowrap">{fmtPrice(s.latestPrice)}</td>
+                                        <td className="px-2 py-1.5 whitespace-nowrap text-left text-slate-500">{s.latestDate}</td>
+                                        <td className="px-2 py-1.5 text-right font-medium text-slate-500 whitespace-nowrap">{fmtPrice(s.latestPrice)}</td>
                                         <td className={`px-2 py-1.5 font-bold whitespace-nowrap`}>
                                             <PercentBar value={s.drawdownPct} max={maxDrawdownPct} colorClass={pctColor(s.drawdownPct)} />
                                         </td>

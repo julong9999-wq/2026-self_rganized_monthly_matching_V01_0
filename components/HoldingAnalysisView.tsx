@@ -18,19 +18,6 @@ const formatDateYMD = (dateStr: string) => {
     return dateStr;
 };
 
-const PercentBar = ({ value, max, colorClass }: { value: number, max: number, colorClass: string }) => {
-    const width = Math.min(100, (Math.abs(value) / max) * 100);
-    const prefix = value > 0 ? '+' : '';
-    return (
-        <div className="flex items-center gap-1.5 w-full justify-end">
-            <div className="w-10 h-1.5 bg-slate-100 rounded-sm overflow-hidden flex flex-shrink-0">
-                 <div className={`h-full ${colorClass.replace('text-', 'bg-')}`} style={{ width: `${width}%` }} />
-            </div>
-            <span className={`text-right flex-shrink-0 min-w-[45px] text-[11px] font-bold ${colorClass}`}>{prefix}{value.toFixed(2)}%</span>
-        </div>
-    );
-};
-
 const RenderCustomLegend = (props: any) => {
     const { payload } = props;
     if (!payload) return null;
@@ -126,14 +113,12 @@ const HoldingAnalysisView: React.FC<Props> = ({ portfolio, stockDailyPrices }) =
         let dateMin = '';
 
         idxData.forEach(d => {
-            const high = d.priceHigh || d.priceCurrent;
-            const low = d.priceLow || d.priceCurrent;
-            if (high > maxClose) {
-                maxClose = high;
+            if (d.priceCurrent > maxClose) {
+                maxClose = d.priceCurrent;
                 dateMax = formatDateYMD(d.date);
             }
-            if (low < minClose) {
-                minClose = low;
+            if (d.priceCurrent < minClose) {
+                minClose = d.priceCurrent;
                 dateMin = formatDateYMD(d.date);
             }
         });
@@ -431,24 +416,23 @@ const HoldingAnalysisView: React.FC<Props> = ({ portfolio, stockDailyPrices }) =
                         />
                         <Legend 
                             content={<RenderCustomLegend />} 
-                            payload={data.sortedNames.map(name => {
-                                const statIdx = data.stats.findIndex(s => s.name === name);
+                            payload={data.sortedNames.map((name, idx) => {
                                 return {
                                     value: name,
                                     type: 'circle',
                                     id: name,
-                                    color: COLORS[(statIdx >= 0 ? statIdx : 0) % COLORS.length]
+                                    color: COLORS[idx % COLORS.length]
                                 };
                             })}
                         />
                         {data.sortedNames.slice().reverse().map((name) => {
-                            const statIdx = data.stats.findIndex(s => s.name === name);
+                            const idx = data.sortedNames.indexOf(name);
                             return (
                                 <Line 
                                     key={name} 
                                     type="monotone" 
                                     dataKey={name} 
-                                    stroke={COLORS[(statIdx >= 0 ? statIdx : 0) % COLORS.length]} 
+                                    stroke={COLORS[idx % COLORS.length]} 
                                     strokeWidth={1.5} 
                                     dot={false} 
                                     activeDot={{ r: 4 }} 
@@ -481,7 +465,7 @@ const HoldingAnalysisView: React.FC<Props> = ({ portfolio, stockDailyPrices }) =
                         <CandlestickChart 
                             data={selectedETF.history} 
                             title={`${selectedETF.code} ${selectedETF.name} 技術線圖`} 
-                            color={COLORS[data.stats.findIndex(s => s.code === selectedETF.code) % COLORS.length]} 
+                            color={COLORS[(data.sortedNames.indexOf(selectedETF.name) >= 0 ? data.sortedNames.indexOf(selectedETF.name) : 0) % COLORS.length]} 
                         />
                     </div>
                 </div>

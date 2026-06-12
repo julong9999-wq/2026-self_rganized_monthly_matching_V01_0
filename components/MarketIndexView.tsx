@@ -18,19 +18,6 @@ const formatDateYMD = (dateStr: string) => {
     return dateStr;
 };
 
-const PercentBar = ({ value, max, colorClass }: { value: number, max: number, colorClass: string }) => {
-    const width = Math.min(100, (Math.abs(value) / max) * 100);
-    const prefix = value > 0 ? '+' : '';
-    return (
-        <div className="flex items-center gap-1.5 w-full justify-end">
-            <div className="w-10 h-1.5 bg-slate-100 rounded-sm overflow-hidden flex flex-shrink-0">
-                 <div className={`h-full ${colorClass.replace('text-', 'bg-')}`} style={{ width: `${width}%` }} />
-            </div>
-            <span className={`text-right flex-shrink-0 min-w-[45px] text-[11px] font-bold ${colorClass}`}>{prefix}{value.toFixed(2)}%</span>
-        </div>
-    );
-};
-
 const RenderCustomLegend = (props: any) => {
     const { payload } = props;
     if (!payload) return null;
@@ -317,24 +304,23 @@ const MarketIndexView: React.FC<Props> = ({ twIndices, usIndices }) => {
                         />
                         <Legend 
                             content={<RenderCustomLegend />}
-                            payload={data.sortedNames.map(name => {
-                                const originalIdx = INDEX_ORDER.indexOf(name);
+                            payload={data.sortedNames.map((name, idx) => {
                                 return {
                                     value: name,
                                     type: 'circle',
                                     id: name,
-                                    color: COLORS[(originalIdx >= 0 ? originalIdx : 0) % COLORS.length]
+                                    color: COLORS[idx % COLORS.length]
                                 };
                             })}
                         />
                         {data.sortedNames.slice().reverse().map((name) => {
-                            const originalIdx = INDEX_ORDER.indexOf(name);
+                            const idx = data.sortedNames.indexOf(name);
                             return (
                                 <Line 
                                     key={name} 
                                     type="monotone" 
                                     dataKey={name} 
-                                    stroke={COLORS[(originalIdx >= 0 ? originalIdx : 0) % COLORS.length]} 
+                                    stroke={COLORS[idx % COLORS.length]} 
                                     strokeWidth={1.5} 
                                     dot={false} 
                                     activeDot={{ r: 4 }} 
@@ -452,9 +438,9 @@ const MarketIndexView: React.FC<Props> = ({ twIndices, usIndices }) => {
         {/* Charts: Individual Candlestick/Line Charts */}
         <div className="space-y-4">
             {data.stats.map(s => {
-                const originalIdx = INDEX_ORDER.indexOf(s.name);
+                const idx = data.sortedNames.indexOf(s.name);
                 return (
-                    <CandlestickChart key={s.name} data={s.history} title={s.name} color={COLORS[originalIdx % COLORS.length]} />
+                    <CandlestickChart key={s.name} data={s.history} title={s.name} color={COLORS[idx % COLORS.length]} />
                 );
             })}
         </div>

@@ -126,12 +126,14 @@ const HoldingAnalysisView: React.FC<Props> = ({ portfolio, stockDailyPrices }) =
         let dateMin = '';
 
         idxData.forEach(d => {
-            if (d.priceCurrent > maxClose) {
-                maxClose = d.priceCurrent;
+            const high = d.priceHigh || d.priceCurrent;
+            const low = d.priceLow || d.priceCurrent;
+            if (high > maxClose) {
+                maxClose = high;
                 dateMax = formatDateYMD(d.date);
             }
-            if (d.priceCurrent < minClose) {
-                minClose = d.priceCurrent;
+            if (low < minClose) {
+                minClose = low;
                 dateMin = formatDateYMD(d.date);
             }
         });
@@ -317,100 +319,53 @@ const HoldingAnalysisView: React.FC<Props> = ({ portfolio, stockDailyPrices }) =
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-2">
             <table className="w-full text-xs text-slate-700">
                 <tbody className="divide-y divide-slate-100">
-                    {sortedStats.map(s => (
-                        <React.Fragment key={s.code}>
-                            <tr className="bg-slate-50/50 hover:bg-slate-100 cursor-pointer" onClick={() => setSelectedETF(s)}>
-                                <td className="px-2 py-1.5 font-bold text-black text-[14px] align-middle w-24 border-r border-slate-100 whitespace-nowrap text-left">
-                                    {s.code}
-                                </td>
-                                {activeTab === '最新' && (
-                                    <>
-                                        <td className="px-2 py-1.5 whitespace-nowrap text-left text-slate-500">{s.latestDate}</td>
-                                        <td className="px-2 py-1.5 font-medium text-slate-500 text-right whitespace-nowrap">{fmtPrice(s.latestPrice)}</td>
-                                        <td className={`px-2 py-1.5 text-left font-bold border-l border-slate-100 whitespace-nowrap ${valColor(s.dailyChange)}`}>
-                                            {prefix(s.dailyChange)}{s.dailyChange.toFixed(2)}
-                                        </td>
-                                    </>
-                                )}
-                                {activeTab === '振幅' && (
-                                    <>
-                                        <td className="px-2 py-1.5 whitespace-nowrap text-left text-slate-500">{s.dateMax}</td>
-                                        <td className="px-2 py-1.5 text-right font-medium text-slate-500 whitespace-nowrap">{fmtPrice(s.maxClose)}</td>
-                                        <td className="px-2 py-1.5 font-bold border-l border-slate-100 text-left whitespace-nowrap text-blue-600">
-                                            {fmtPrice(s.maxClose - s.minClose)}
-                                        </td>
-                                    </>
-                                )}
-                                {activeTab === '反彈' && (
-                                    <>
-                                        <td className="px-2 py-1.5 whitespace-nowrap text-left text-slate-500">{s.dateMin}</td>
-                                        <td className="px-2 py-1.5 text-right font-medium text-slate-500 whitespace-nowrap">{fmtPrice(s.minClose)}</td>
-                                        <td className={`px-2 py-1.5 font-bold border-l border-slate-100 text-left whitespace-nowrap ${valColor(s.latestPrice - s.minClose)}`}>
-                                            {prefix(s.latestPrice - s.minClose)}{fmtPrice(s.latestPrice - s.minClose)}
-                                        </td>
-                                    </>
-                                )}
-                                {activeTab === '下跌' && (
-                                    <>
-                                        <td className="px-2 py-1.5 whitespace-nowrap text-left text-slate-500">{s.dateMax}</td>
-                                        <td className="px-2 py-1.5 text-right font-medium text-slate-500 whitespace-nowrap">{fmtPrice(s.maxClose)}</td>
-                                        <td className={`px-2 py-1.5 font-bold border-l border-slate-100 text-left whitespace-nowrap ${valColor(s.latestPrice - s.maxClose)}`}>
-                                            {prefix(s.latestPrice - s.maxClose)}{fmtPrice(s.latestPrice - s.maxClose)}
-                                        </td>
-                                    </>
-                                )}
-                            </tr>
-                            <tr className="bg-white hover:bg-slate-50 cursor-pointer" onClick={() => setSelectedETF(s)}>
-                                <td className="px-2 py-1.5 font-normal text-slate-500 text-[12px] align-middle w-24 border-r border-slate-100 whitespace-nowrap text-left">
-                                    {s.name}
-                                </td>
-                                {activeTab === '最新' && (
-                                    <>
-                                        <td className="px-2 py-1.5 whitespace-nowrap text-left text-slate-500">{s.prevDate}</td>
-                                        <td className="px-2 py-1.5 text-right font-medium text-slate-500 whitespace-nowrap">{fmtPrice(s.latestPrice - s.dailyChange)}</td>
-                                        <td className={`px-2 py-1.5 font-bold whitespace-nowrap`}>
-                                            <div className="w-[85px] ml-auto">
-                                                <PercentBar value={s.dailyChangePct} max={maxDailyChangePct} colorClass={pctColor(s.dailyChangePct)} />
-                                            </div>
-                                        </td>
-                                    </>
-                                )}
-                                {activeTab === '振幅' && (
-                                    <>
-                                        <td className="px-2 py-1.5 whitespace-nowrap text-left text-slate-500">{s.dateMin}</td>
-                                        <td className="px-2 py-1.5 text-right font-medium text-slate-500 whitespace-nowrap">{fmtPrice(s.minClose)}</td>
-                                        <td className={`px-2 py-1.5 font-bold whitespace-nowrap`}>
-                                            <div className="w-[85px] ml-auto">
-                                                <PercentBar value={s.amplitudePct} max={maxAmplitudePct} colorClass="text-blue-600" />
-                                            </div>
-                                        </td>
-                                    </>
-                                )}
-                                {activeTab === '反彈' && (
-                                    <>
-                                        <td className="px-2 py-1.5 whitespace-nowrap text-left text-slate-500">{s.latestDate}</td>
-                                        <td className="px-2 py-1.5 text-right font-medium text-slate-500 whitespace-nowrap">{fmtPrice(s.latestPrice)}</td>
-                                        <td className={`px-2 py-1.5 font-bold whitespace-nowrap`}>
-                                            <div className="w-[85px] ml-auto">
-                                                <PercentBar value={s.reboundPct} max={maxReboundPct} colorClass={pctColor(s.reboundPct)} />
-                                            </div>
-                                        </td>
-                                    </>
-                                )}
-                                {activeTab === '下跌' && (
-                                    <>
-                                        <td className="px-2 py-1.5 whitespace-nowrap text-left text-slate-500">{s.latestDate}</td>
-                                        <td className="px-2 py-1.5 text-right font-medium text-slate-500 whitespace-nowrap">{fmtPrice(s.latestPrice)}</td>
-                                        <td className={`px-2 py-1.5 font-bold whitespace-nowrap`}>
-                                            <div className="w-[85px] ml-auto">
-                                                <PercentBar value={s.drawdownPct} max={maxDrawdownPct} colorClass={pctColor(s.drawdownPct)} />
-                                            </div>
-                                        </td>
-                                    </>
-                                )}
-                            </tr>
-                        </React.Fragment>
-                    ))}
+                    {sortedStats.map(s => {
+                        let val = 0;
+                        let pct = 0;
+                        let colorClass = 'text-slate-500';
+                        if (activeTab === '最新') {
+                            val = s.dailyChange;
+                            pct = s.dailyChangePct;
+                            colorClass = valColor(s.dailyChange);
+                        } else if (activeTab === '振幅') {
+                            val = Math.abs(s.maxClose - s.minClose);
+                            pct = s.amplitudePct;
+                            colorClass = 'text-blue-600';
+                        } else if (activeTab === '反彈') {
+                            val = s.latestPrice - s.minClose;
+                            pct = s.reboundPct;
+                            colorClass = valColor(val);
+                        } else if (activeTab === '下跌') {
+                            val = s.latestPrice - s.maxClose;
+                            pct = s.drawdownPct;
+                            colorClass = valColor(val);
+                        }
+
+                        return (
+                            <React.Fragment key={s.code}>
+                                <tr className="bg-slate-50/50 hover:bg-slate-100 cursor-pointer" onClick={() => setSelectedETF(s)}>
+                                    <td className="px-2 py-1.5 font-bold text-black text-[14px] align-middle w-24 border-r border-slate-100 whitespace-nowrap text-left">
+                                        {s.code}
+                                    </td>
+                                    <td className="px-2 py-1.5 whitespace-nowrap text-left text-slate-500">{s.latestDate}</td>
+                                    <td className="px-2 py-1.5 font-medium text-slate-500 text-right whitespace-nowrap">{fmtPrice(s.latestPrice)}</td>
+                                    <td className={`px-2 py-1.5 text-left font-bold border-l border-slate-100 whitespace-nowrap ${colorClass}`}>
+                                        {activeTab === '振幅' ? '' : prefix(val)}{fmtPrice(val)}
+                                    </td>
+                                </tr>
+                                <tr className="bg-white hover:bg-slate-50 cursor-pointer" onClick={() => setSelectedETF(s)}>
+                                    <td className="px-2 py-1.5 font-normal text-slate-500 text-[12px] align-middle w-24 border-r border-slate-100 whitespace-nowrap text-left">
+                                        {s.name}
+                                    </td>
+                                    <td className="px-2 py-1.5 whitespace-nowrap text-left text-slate-500">{s.prevDate}</td>
+                                    <td className="px-2 py-1.5 text-right font-medium text-slate-500 whitespace-nowrap">{fmtPrice(s.latestPrice - s.dailyChange)}</td>
+                                    <td className={`px-2 py-1.5 font-bold text-right whitespace-nowrap ${colorClass}`}>
+                                        {activeTab === '振幅' ? '' : prefix(pct)}{pct.toFixed(2)}%
+                                    </td>
+                                </tr>
+                            </React.Fragment>
+                        );
+                    })}
                 </tbody>
             </table>
         </div>
@@ -433,7 +388,10 @@ const HoldingAnalysisView: React.FC<Props> = ({ portfolio, stockDailyPrices }) =
                         />
                         <YAxis width={30} tickFormatter={(val) => `${Math.round(val)}%`} tick={{ fontSize: 9, fill: '#94a3b8' }} tickLine={false} axisLine={false} />
                         <Tooltip 
-                            itemSorter={(item) => -(item.value as number)}
+                            itemSorter={(item) => {
+                                const idx = data.sortedNames.indexOf(item.dataKey as string);
+                                return idx >= 0 ? idx : 999;
+                            }}
                             formatter={(value: any, name: any) => [`${Number(value).toFixed(2)}%`, name]}
                             labelFormatter={(label) => `日期: ${label}`}
                             labelStyle={{ fontSize: 10, color: '#64748b', marginBottom: 4 }}
@@ -452,7 +410,7 @@ const HoldingAnalysisView: React.FC<Props> = ({ portfolio, stockDailyPrices }) =
                                 };
                             })}
                         />
-                        {data.sortedNames.map((name) => {
+                        {data.sortedNames.slice().reverse().map((name) => {
                             const statIdx = data.stats.findIndex(s => s.name === name);
                             return (
                                 <Line 

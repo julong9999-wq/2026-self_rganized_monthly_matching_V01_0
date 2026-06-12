@@ -472,19 +472,24 @@ export const parseMarketIndex = (csvContent: string): MarketIndex[] => {
       }
   }
 
-  const findCol = (keywords: string[]) => header.findIndex(h => keywords.some(k => h.includes(k)));
+  const findCol = (keywords: string[], excludeIdx: number = -1) => header.findIndex((h, i) => i !== excludeIdx && keywords.some(k => h === k));
+  const findColLoose = (keywords: string[], excludeIdx: number = -1) => {
+      let idx = findCol(keywords, excludeIdx);
+      if (idx !== -1) return idx;
+      return header.findIndex((h, i) => i !== excludeIdx && keywords.some(k => h.includes(k)));
+  };
 
-  const idxName = findCol(['指數名稱', 'name', '名稱', '指數']);
-  const idxCode = findCol(['代碼', 'code', 'symbol']);
-  const idxDate = findCol(['日期', 'date', 'tradetime', '時間']);
-  const idxYest = findCol(['昨日收盤價', '昨日收盤', 'closeyest', '昨日', '昨收']);
-  const idxOpen = findCol(['開盤', 'priceopen', 'open']);
-  const idxHigh = findCol(['最高', '高價', 'high']);
-  const idxLow = findCol(['最低', '低價', 'low']);
-  const idxPrice = findCol(['最新股價', '股價', '現價', '收盤價', '收盤', 'price_c', 'priceCurrent']);
-  const idxVol = findCol(['成交量', 'volume', '成交']);
-  const idxChange = findCol(['漲跌點數', 'change', '漲跌']);
-  const idxChangePct = findCol(['漲跌幅度', '幅度', 'percent', '漲跌幅']);
+  const idxName = findColLoose(['指數名稱', 'name', '名稱', '指數']);
+  const idxCode = findColLoose(['代碼', 'code', 'symbol']);
+  const idxDate = findColLoose(['日期', 'date', 'tradetime', '時間']);
+  const idxYest = findColLoose(['昨日收盤價', '昨日收盤', 'closeyest', '昨日', '昨收']);
+  const idxOpen = findColLoose(['開盤', 'priceopen', 'open']);
+  const idxHigh = findColLoose(['最高', '高價', 'high']);
+  const idxLow = findColLoose(['最低', '低價', 'low']);
+  const idxPrice = findColLoose(['最新股價', '股價', '現價', '收盤價', '收盤', 'price_c', 'priceCurrent'], idxYest);
+  const idxVol = findColLoose(['成交量', 'volume', '成交']);
+  const idxChange = findColLoose(['漲跌點數', 'change', '漲跌']);
+  const idxChangePct = findColLoose(['漲跌幅度', '幅度', 'percent', '漲跌幅']);
 
   for (let i = headerRowIndex + 1; i < lines.length; i++) {
       const row = parseCSVRow(lines[i]);
@@ -531,16 +536,21 @@ export const parseStockDailyPrice = (csvContent: string): StockDailyPrice[] => {
       }
   }
 
-  const findCol = (keywords: string[]) => header.findIndex(h => keywords.some(k => h.includes(k)));
+  const findCol = (keywords: string[], excludeIdx: number = -1) => header.findIndex((h, i) => i !== excludeIdx && keywords.some(k => h === k));
+  const findColLoose = (keywords: string[], excludeIdx: number = -1) => {
+      let idx = findCol(keywords, excludeIdx);
+      if (idx !== -1) return idx;
+      return header.findIndex((h, i) => i !== excludeIdx && keywords.some(k => h.includes(k)));
+  };
 
-  const idxCode = findCol(['etf 代碼', '代碼', 'code', 'symbol', '股票代號']);
-  const idxName = findCol(['etf 名稱', '名稱', 'name']);
-  const idxDate = findCol(['日期', 'date']);
-  const idxYest = findCol(['昨日收盤價', '昨日收盤', '昨收', '昨日']);
-  const idxOpen = findCol(['開盤', 'open']);
-  const idxHigh = findCol(['最高', 'high', '高價']);
-  const idxLow = findCol(['最低', 'low', '低價']);
-  const idxPrice = findCol(['最新股價', '股價', '現價', '收盤價', '收盤', 'priceCurrent', 'price']);
+  const idxCode = findColLoose(['etf 代碼', '代碼', 'code', 'symbol', '股票代號']);
+  const idxName = findColLoose(['etf 名稱', '名稱', 'name']);
+  const idxDate = findColLoose(['日期', 'date']);
+  const idxYest = findColLoose(['昨日收盤價', '昨日收盤', '昨收', '昨日']);
+  const idxOpen = findColLoose(['開盤', 'open']);
+  const idxHigh = findColLoose(['最高', 'high', '高價']);
+  const idxLow = findColLoose(['最低', 'low', '低價']);
+  const idxPrice = findColLoose(['最新股價', '股價', '現價', '收盤價', '收盤', 'priceCurrent', 'price'], idxYest);
 
   for (let i = headerRowIndex + 1; i < lines.length; i++) {
       const row = parseCSVRow(lines[i]);

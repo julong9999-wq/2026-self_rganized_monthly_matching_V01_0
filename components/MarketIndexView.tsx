@@ -182,10 +182,16 @@ const MarketIndexView: React.FC<Props> = ({ twIndices, usIndices }) => {
 
     // calculate final performance order
     const finalPerformances = stats.map(s => {
-        const lastRec = comparisonData[comparisonData.length - 1];
+        let perf = 0;
+        for (let i = comparisonData.length - 1; i >= 0; i--) {
+            if (comparisonData[i][s.name] !== undefined) {
+                perf = comparisonData[i][s.name];
+                break;
+            }
+        }
         return {
             name: s.name,
-            perf: lastRec ? (lastRec[s.name] || 0) : 0
+            perf
         };
     });
     finalPerformances.sort((a, b) => b.perf - a.perf);
@@ -299,7 +305,10 @@ const MarketIndexView: React.FC<Props> = ({ twIndices, usIndices }) => {
                         />
                         <YAxis width={30} tickFormatter={(val) => `${Math.round(val)}%`} tick={{ fontSize: 9, fill: '#94a3b8' }} tickLine={false} axisLine={false} />
                         <Tooltip 
-                            itemSorter={(item) => -(item.value as number)}
+                            itemSorter={(item) => {
+                                const idx = data.sortedNames.indexOf(item.dataKey as string);
+                                return idx >= 0 ? idx : 999;
+                            }}
                             formatter={(value: any, name: any) => [`${Number(value).toFixed(2)}%`, name]}
                             labelFormatter={(label) => `日期: ${label}`}
                             labelStyle={{ fontSize: 10, color: '#64748b', marginBottom: 4 }}
@@ -318,14 +327,14 @@ const MarketIndexView: React.FC<Props> = ({ twIndices, usIndices }) => {
                                 };
                             })}
                         />
-                        {data.sortedNames.map((name) => {
+                        {data.sortedNames.slice().reverse().map((name) => {
                             const originalIdx = INDEX_ORDER.indexOf(name);
                             return (
                                 <Line 
                                     key={name} 
                                     type="monotone" 
                                     dataKey={name} 
-                                    stroke={COLORS[originalIdx % COLORS.length]} 
+                                    stroke={COLORS[(originalIdx >= 0 ? originalIdx : 0) % COLORS.length]} 
                                     strokeWidth={1.5} 
                                     dot={false} 
                                     activeDot={{ r: 4 }} 
@@ -401,10 +410,8 @@ const MarketIndexView: React.FC<Props> = ({ twIndices, usIndices }) => {
                                 {activeTab === '最新' && (
                                     <>
                                         <td className="px-2 py-1.5 font-medium text-slate-800 text-center whitespace-nowrap">{fmtPrice(s.latestPrice)}</td>
-                                        <td className={`px-2 py-1.5 font-medium whitespace-nowrap`}>
-                                            <div className="w-[85px] ml-auto">
-                                                <PercentBar value={s.dailyChangePct} max={maxDailyChangePct} colorClass={pctColor(s.dailyChangePct)} />
-                                            </div>
+                                        <td className={`px-2 py-1.5 font-medium text-right whitespace-nowrap ${pctColor(s.dailyChangePct)}`}>
+                                            {s.dailyChangePct > 0 ? '+' : ''}{s.dailyChangePct.toFixed(2)}%
                                         </td>
                                     </>
                                 )}
@@ -412,10 +419,8 @@ const MarketIndexView: React.FC<Props> = ({ twIndices, usIndices }) => {
                                     <>
                                         <td className="px-2 py-1.5 whitespace-nowrap text-center text-slate-500">{s.dateMin}</td>
                                         <td className="px-2 py-1.5 text-right font-medium text-slate-800 whitespace-nowrap">{fmtPrice(s.minClose)}</td>
-                                        <td className={`px-2 py-1.5 font-bold whitespace-nowrap`}>
-                                            <div className="w-[85px] ml-auto">
-                                                <PercentBar value={s.amplitudePct} max={maxAmplitudePct} colorClass="text-blue-600" />
-                                            </div>
+                                        <td className={`px-2 py-1.5 font-bold text-right whitespace-nowrap text-blue-600`}>
+                                            {s.amplitudePct.toFixed(2)}%
                                         </td>
                                     </>
                                 )}
@@ -423,10 +428,8 @@ const MarketIndexView: React.FC<Props> = ({ twIndices, usIndices }) => {
                                     <>
                                         <td className="px-2 py-1.5 whitespace-nowrap text-center text-slate-500">{s.latestDate}</td>
                                         <td className="px-2 py-1.5 text-right font-medium text-blue-600 whitespace-nowrap">{fmtPrice(s.latestPrice)}</td>
-                                        <td className={`px-2 py-1.5 font-bold whitespace-nowrap`}>
-                                            <div className="w-[85px] ml-auto">
-                                                <PercentBar value={s.reboundPct} max={maxReboundPct} colorClass={pctColor(s.reboundPct)} />
-                                            </div>
+                                        <td className={`px-2 py-1.5 font-bold text-right whitespace-nowrap ${pctColor(s.reboundPct)}`}>
+                                            {s.reboundPct > 0 ? '+' : ''}{s.reboundPct.toFixed(2)}%
                                         </td>
                                     </>
                                 )}
@@ -434,10 +437,8 @@ const MarketIndexView: React.FC<Props> = ({ twIndices, usIndices }) => {
                                     <>
                                         <td className="px-2 py-1.5 whitespace-nowrap text-center text-slate-500">{s.latestDate}</td>
                                         <td className="px-2 py-1.5 text-right font-medium text-blue-600 whitespace-nowrap">{fmtPrice(s.latestPrice)}</td>
-                                        <td className={`px-2 py-1.5 font-bold whitespace-nowrap`}>
-                                            <div className="w-[85px] ml-auto">
-                                                <PercentBar value={s.drawdownPct} max={maxDrawdownPct} colorClass={pctColor(s.drawdownPct)} />
-                                            </div>
+                                        <td className={`px-2 py-1.5 font-bold text-right whitespace-nowrap ${pctColor(s.drawdownPct)}`}>
+                                            {s.drawdownPct > 0 ? '+' : ''}{s.drawdownPct.toFixed(2)}%
                                         </td>
                                     </>
                                 )}

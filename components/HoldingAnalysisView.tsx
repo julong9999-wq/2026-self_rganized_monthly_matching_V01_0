@@ -182,10 +182,16 @@ const HoldingAnalysisView: React.FC<Props> = ({ portfolio, stockDailyPrices }) =
     const comparisonData = Object.values(comparisonMap).sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
     const finalPerformances = stats.map(s => {
-        const lastRec = comparisonData[comparisonData.length - 1];
+        let perf = 0;
+        for (let i = comparisonData.length - 1; i >= 0; i--) {
+            if (comparisonData[i][s.name] !== undefined) {
+                perf = comparisonData[i][s.name];
+                break;
+            }
+        }
         return {
             name: s.name,
-            perf: lastRec ? (lastRec[s.name] || 0) : 0
+            perf
         };
     });
     finalPerformances.sort((a, b) => b.perf - a.perf);
@@ -323,19 +329,44 @@ const HoldingAnalysisView: React.FC<Props> = ({ portfolio, stockDailyPrices }) =
                         let val = 0;
                         let pct = 0;
                         let colorClass = 'text-slate-500';
+                        let date1 = '';
+                        let price1 = 0;
+                        let date2 = '';
+                        let price2 = 0;
+
                         if (activeTab === '最新') {
+                            date1 = s.latestDate;
+                            price1 = s.latestPrice;
+                            date2 = s.prevDate;
+                            price2 = s.latestPrice - s.dailyChange;
+
                             val = s.dailyChange;
                             pct = s.dailyChangePct;
                             colorClass = valColor(s.dailyChange);
                         } else if (activeTab === '振幅') {
+                            date1 = s.dateMax;
+                            price1 = s.maxClose;
+                            date2 = s.dateMin;
+                            price2 = s.minClose;
+
                             val = Math.abs(s.maxClose - s.minClose);
                             pct = s.amplitudePct;
                             colorClass = 'text-blue-600';
                         } else if (activeTab === '反彈') {
+                            date1 = s.dateMin;
+                            price1 = s.minClose;
+                            date2 = s.latestDate;
+                            price2 = s.latestPrice;
+
                             val = s.latestPrice - s.minClose;
                             pct = s.reboundPct;
                             colorClass = valColor(val);
                         } else if (activeTab === '下跌') {
+                            date1 = s.dateMax;
+                            price1 = s.maxClose;
+                            date2 = s.latestDate;
+                            price2 = s.latestPrice;
+
                             val = s.latestPrice - s.maxClose;
                             pct = s.drawdownPct;
                             colorClass = valColor(val);
@@ -347,8 +378,8 @@ const HoldingAnalysisView: React.FC<Props> = ({ portfolio, stockDailyPrices }) =
                                     <td className="px-2 py-1.5 font-bold text-black text-[14px] align-middle w-24 border-r border-slate-100 whitespace-nowrap text-left">
                                         {s.code}
                                     </td>
-                                    <td className="px-2 py-1.5 whitespace-nowrap text-left text-slate-500">{s.latestDate}</td>
-                                    <td className="px-2 py-1.5 font-medium text-slate-500 text-right whitespace-nowrap">{fmtPrice(s.latestPrice)}</td>
+                                    <td className="px-2 py-1.5 whitespace-nowrap text-left text-slate-500">{date1}</td>
+                                    <td className="px-2 py-1.5 font-medium text-slate-500 text-right whitespace-nowrap">{fmtPrice(price1)}</td>
                                     <td className={`px-2 py-1.5 text-left font-bold border-l border-slate-100 whitespace-nowrap ${colorClass}`}>
                                         {activeTab === '振幅' ? '' : prefix(val)}{fmtPrice(val)}
                                     </td>
@@ -357,8 +388,8 @@ const HoldingAnalysisView: React.FC<Props> = ({ portfolio, stockDailyPrices }) =
                                     <td className="px-2 py-1.5 font-normal text-slate-500 text-[12px] align-middle w-24 border-r border-slate-100 whitespace-nowrap text-left">
                                         {s.name}
                                     </td>
-                                    <td className="px-2 py-1.5 whitespace-nowrap text-left text-slate-500">{s.prevDate}</td>
-                                    <td className="px-2 py-1.5 text-right font-medium text-slate-500 whitespace-nowrap">{fmtPrice(s.latestPrice - s.dailyChange)}</td>
+                                    <td className="px-2 py-1.5 whitespace-nowrap text-left text-slate-500">{date2}</td>
+                                    <td className="px-2 py-1.5 text-right font-medium text-slate-500 whitespace-nowrap">{fmtPrice(price2)}</td>
                                     <td className={`px-2 py-1.5 font-bold text-right whitespace-nowrap ${colorClass}`}>
                                         {activeTab === '振幅' ? '' : prefix(pct)}{pct.toFixed(2)}%
                                     </td>

@@ -33,7 +33,14 @@ const RenderCustomLegend = (props: any) => {
                         {row[0] && (
                             <div className="flex items-center gap-1.5 w-[90px]">
                                 <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: row[0].color }} />
-                                <span className="text-[11px] text-slate-700 truncate font-medium" title={row[0].value}>{row[0].value}</span>
+                                <span className="text-[11px] text-slate-700 truncate font-medium flex items-center pr-1" title={row[0].value}>
+                                    {row[0].value}
+                                    {row[0].payload?.perf !== undefined && (
+                                        <span className={`ml-1 flex-shrink-0 ${row[0].payload.perf >= 0 ? "text-red-500" : "text-green-500"}`}>
+                                            {row[0].payload.perf > 0 ? '+' : ''}{row[0].payload.perf.toFixed(2)}%
+                                        </span>
+                                    )}
+                                </span>
                             </div>
                         )}
                     </div>
@@ -41,7 +48,14 @@ const RenderCustomLegend = (props: any) => {
                         {row[1] && (
                             <div className="flex items-center gap-1.5 w-[90px]">
                                 <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: row[1].color }} />
-                                <span className="text-[11px] text-slate-700 truncate font-medium" title={row[1].value}>{row[1].value}</span>
+                                <span className="text-[11px] text-slate-700 truncate font-medium flex items-center pr-1" title={row[1].value}>
+                                    {row[1].value}
+                                    {row[1].payload?.perf !== undefined && (
+                                        <span className={`ml-1 flex-shrink-0 ${row[1].payload.perf >= 0 ? "text-red-500" : "text-green-500"}`}>
+                                            {row[1].payload.perf > 0 ? '+' : ''}{row[1].payload.perf.toFixed(2)}%
+                                        </span>
+                                    )}
+                                </span>
                             </div>
                         )}
                     </div>
@@ -49,7 +63,14 @@ const RenderCustomLegend = (props: any) => {
                         {row[2] && (
                             <div className="flex items-center gap-1.5 w-[90px]">
                                 <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: row[2].color }} />
-                                <span className="text-[11px] text-slate-700 truncate font-medium" title={row[2].value}>{row[2].value}</span>
+                                <span className="text-[11px] text-slate-700 truncate font-medium flex items-center pr-1" title={row[2].value}>
+                                    {row[2].value}
+                                    {row[2].payload?.perf !== undefined && (
+                                        <span className={`ml-1 flex-shrink-0 ${row[2].payload.perf >= 0 ? "text-red-500" : "text-green-500"}`}>
+                                            {row[2].payload.perf > 0 ? '+' : ''}{row[2].payload.perf.toFixed(2)}%
+                                        </span>
+                                    )}
+                                </span>
                             </div>
                         )}
                     </div>
@@ -183,8 +204,9 @@ const MarketIndexView: React.FC<Props> = ({ twIndices, usIndices }) => {
     });
     finalPerformances.sort((a, b) => b.perf - a.perf);
     const sortedNames = finalPerformances.map(f => f.name);
+    const finalPerfMap = finalPerformances.reduce((acc, f) => ({ ...acc, [f.name]: f.perf }), {} as Record<string, number>);
 
-    return { stats, comparisonData, sortedNames };
+    return { stats, comparisonData, sortedNames, finalPerfMap };
   }, [twIndices, usIndices]);
 
   const CandlestickChart = ({ data, title, color }: { data: any[], title: string, color: string }) => {
@@ -278,7 +300,9 @@ const MarketIndexView: React.FC<Props> = ({ twIndices, usIndices }) => {
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-1.5 mb-2 mt-1">
             <div className="flex items-baseline gap-2 mb-1 px-1">
                <h3 className="text-sm font-bold text-slate-800">漲跌幅比較</h3>
-               <span className="text-xs text-slate-400">同一起跑點</span>
+               <span className="text-xs text-slate-400">
+                   {data.comparisonData.length > 0 ? `${data.comparisonData[0].date} 至 ${data.comparisonData[data.comparisonData.length-1].date} 日期區間` : '日期區間'}
+               </span>
             </div>
             
             <div className="w-full aspect-video flex flex-col">
@@ -291,17 +315,6 @@ const MarketIndexView: React.FC<Props> = ({ twIndices, usIndices }) => {
                             tick={{ fontSize: 9, fill: '#94a3b8' }} tickLine={false} axisLine={false} 
                         />
                         <YAxis width={30} tickFormatter={(val) => `${Math.round(val)}%`} tick={{ fontSize: 9, fill: '#94a3b8' }} tickLine={false} axisLine={false} />
-                        <Tooltip 
-                            itemSorter={(item) => {
-                                const idx = data.sortedNames.indexOf(item.dataKey as string);
-                                return idx >= 0 ? idx : 999;
-                            }}
-                            formatter={(value: any, name: any) => [`${Number(value).toFixed(2)}%`, name]}
-                            labelFormatter={(label) => `日期: ${label}`}
-                            labelStyle={{ fontSize: 10, color: '#64748b', marginBottom: 4 }}
-                            itemStyle={{ fontSize: 12, padding: 0 }}
-                            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                        />
                         <Legend 
                             content={<RenderCustomLegend />}
                             payload={data.sortedNames.map((name, idx) => {
@@ -309,7 +322,8 @@ const MarketIndexView: React.FC<Props> = ({ twIndices, usIndices }) => {
                                     value: name,
                                     type: 'circle',
                                     id: name,
-                                    color: COLORS[idx % COLORS.length]
+                                    color: COLORS[idx % COLORS.length],
+                                    payload: { perf: data.finalPerfMap[name] }
                                 };
                             })}
                         />

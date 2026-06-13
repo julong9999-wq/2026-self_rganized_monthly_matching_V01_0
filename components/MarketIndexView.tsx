@@ -29,11 +29,6 @@ const RenderCustomLegend = (props: any) => {
         return (idxA !== -1 ? idxA : 999) - (idxB !== -1 ? idxB : 999);
     });
 
-    const rows = [];
-    for (let i = 0; i < sortedPayload.length; i += 3) {
-        rows.push(sortedPayload.slice(i, i + 3));
-    }
-    
     const renderLegendItem = (item: any) => {
         if (!item) return null;
         let name = item.value;
@@ -41,8 +36,8 @@ const RenderCustomLegend = (props: any) => {
         
         return (
             <div className="flex items-center gap-1.5 whitespace-nowrap overflow-hidden">
-                <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }} />
-                <span className="text-[11px] text-slate-700 truncate font-medium flex items-center pr-1 flex-1" title={name}>
+                <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }} />
+                <span className="text-[10px] text-slate-700 truncate font-medium flex items-center pr-1 flex-1" title={name}>
                     <span className="truncate">{name}</span>
                     {perf !== undefined && (
                         <span className={`ml-1 flex-shrink-0 ${perf >= 0 ? "text-red-500" : "text-green-500"}`}>
@@ -56,19 +51,13 @@ const RenderCustomLegend = (props: any) => {
 
     return (
         <div className="w-full mt-4 px-2 tracking-tighter">
-            {rows.map((row: any[], rIdx: number) => (
-                <div key={rIdx} className="flex justify-between items-center mb-3 w-full">
-                    <div className="flex-1 flex justify-start">
-                        {renderLegendItem(row[0])}
+            <div className="grid grid-cols-3 gap-y-2 gap-x-1 w-full justify-items-start">
+                {sortedPayload.map((entry: any, index: number) => (
+                    <div key={`item-${index}`} className="w-full flex justify-start overflow-hidden">
+                        {renderLegendItem(entry)}
                     </div>
-                    <div className="flex-1 flex justify-center">
-                        {renderLegendItem(row[1])}
-                    </div>
-                    <div className="flex-1 flex justify-end">
-                        {renderLegendItem(row[2])}
-                    </div>
-                </div>
-            ))}
+                ))}
+            </div>
         </div>
     );
 };
@@ -302,15 +291,8 @@ const MarketIndexView: React.FC<Props> = ({ twIndices, usIndices }) => {
                 <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={data.comparisonData} margin={{ top: 2, right: 2, left: -20, bottom: 0 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                        <XAxis 
-                            dataKey="date" 
-                            ticks={data.comparisonData.length > 0 ? [data.comparisonData[0].date, data.comparisonData[data.comparisonData.length-1].date] : []} 
-                            tick={{ fontSize: 9, fill: '#94a3b8' }} tickLine={false} axisLine={false} 
-                        />
+                        <XAxis dataKey="date" hide={true} />
                         <YAxis width={30} tickFormatter={(val) => `${Math.round(val)}%`} tick={{ fontSize: 9, fill: '#94a3b8' }} tickLine={false} axisLine={false} />
-                        <Legend 
-                            content={<RenderCustomLegend finalPerfMap={data.finalPerfMap} sortedNames={data.sortedNames} />}
-                        />
                         {data.sortedNames.slice().reverse().map((name) => {
                             const idx = data.sortedNames.indexOf(name);
                             return (
@@ -329,6 +311,13 @@ const MarketIndexView: React.FC<Props> = ({ twIndices, usIndices }) => {
                     </LineChart>
                 </ResponsiveContainer>
             </div>
+            {data.comparisonData.length > 0 && (
+                 <RenderCustomLegend 
+                     payload={data.sortedNames.map(name => ({ value: name, color: COLORS[data.sortedNames.indexOf(name) % COLORS.length] }))}
+                     finalPerfMap={data.finalPerfMap} 
+                     sortedNames={data.sortedNames} 
+                 />
+            )}
         </div>
 
         {/* Tab Controls for Tables */}

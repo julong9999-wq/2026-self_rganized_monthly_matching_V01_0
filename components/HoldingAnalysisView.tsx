@@ -31,10 +31,10 @@ const RenderCustomLegend = (props: any) => {
                 <div key={rIdx} className="flex justify-between items-center mb-3 w-full">
                     <div className="flex-1 flex justify-start">
                         {row[0] && (
-                            <div className="flex items-center gap-1.5 w-[90px]">
+                            <div className="flex items-center gap-1.5 whitespace-nowrap overflow-hidden">
                                 <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: row[0].color }} />
-                                <span className="text-[11px] text-slate-700 truncate font-medium flex items-center pr-1" title={row[0].value}>
-                                    {row[0].value}
+                                <span className="text-[11px] text-slate-700 truncate font-medium flex items-center pr-1 flex-1" title={row[0].value}>
+                                    <span className="truncate">{row[0].value}</span>
                                     {row[0].payload?.perf !== undefined && (
                                         <span className={`ml-1 flex-shrink-0 ${row[0].payload.perf >= 0 ? "text-red-500" : "text-green-500"}`}>
                                             {row[0].payload.perf > 0 ? '+' : ''}{row[0].payload.perf.toFixed(2)}%
@@ -46,10 +46,10 @@ const RenderCustomLegend = (props: any) => {
                     </div>
                     <div className="flex-1 flex justify-center">
                         {row[1] && (
-                            <div className="flex items-center gap-1.5 w-[90px]">
+                            <div className="flex items-center gap-1.5 whitespace-nowrap overflow-hidden">
                                 <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: row[1].color }} />
-                                <span className="text-[11px] text-slate-700 truncate font-medium flex items-center pr-1" title={row[1].value}>
-                                    {row[1].value}
+                                <span className="text-[11px] text-slate-700 truncate font-medium flex items-center pr-1 flex-1" title={row[1].value}>
+                                    <span className="truncate">{row[1].value}</span>
                                     {row[1].payload?.perf !== undefined && (
                                         <span className={`ml-1 flex-shrink-0 ${row[1].payload.perf >= 0 ? "text-red-500" : "text-green-500"}`}>
                                             {row[1].payload.perf > 0 ? '+' : ''}{row[1].payload.perf.toFixed(2)}%
@@ -61,10 +61,10 @@ const RenderCustomLegend = (props: any) => {
                     </div>
                     <div className="flex-1 flex justify-end">
                         {row[2] && (
-                            <div className="flex items-center gap-1.5 w-[90px]">
+                            <div className="flex items-center gap-1.5 whitespace-nowrap overflow-hidden">
                                 <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: row[2].color }} />
-                                <span className="text-[11px] text-slate-700 truncate font-medium flex items-center pr-1" title={row[2].value}>
-                                    {row[2].value}
+                                <span className="text-[11px] text-slate-700 truncate font-medium flex items-center pr-1 flex-1" title={row[2].value}>
+                                    <span className="truncate">{row[2].value}</span>
                                     {row[2].payload?.perf !== undefined && (
                                         <span className={`ml-1 flex-shrink-0 ${row[2].payload.perf >= 0 ? "text-red-500" : "text-green-500"}`}>
                                             {row[2].payload.perf > 0 ? '+' : ''}{row[2].payload.perf.toFixed(2)}%

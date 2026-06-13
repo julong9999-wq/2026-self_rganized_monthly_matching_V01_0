@@ -19,24 +19,25 @@ const formatDateYMD = (dateStr: string) => {
 };
 
 const RenderCustomLegend = (props: any) => {
-    const { payload } = props;
+    const { payload, finalPerfMap, sortedNames } = props;
     if (!payload) return null;
+    
+    // Sort payload by sortedNames
+    const sortedPayload = [...payload].sort((a, b) => {
+        const idxA = sortedNames.indexOf(a.value);
+        const idxB = sortedNames.indexOf(b.value);
+        return (idxA !== -1 ? idxA : 999) - (idxB !== -1 ? idxB : 999);
+    });
+
     const rows = [];
-    for (let i = 0; i < payload.length; i += 3) {
-        rows.push(payload.slice(i, i + 3));
+    for (let i = 0; i < sortedPayload.length; i += 3) {
+        rows.push(sortedPayload.slice(i, i + 3));
     }
     
     const renderLegendItem = (item: any) => {
         if (!item) return null;
         let name = item.value;
-        let perf: number | undefined = undefined;
-        if (typeof item.value === 'string' && item.value.includes('|||')) {
-            const parts = item.value.split('|||');
-            name = parts[0];
-            if (parts[1] !== 'undefined') {
-                perf = parseFloat(parts[1]);
-            }
-        }
+        let perf: number | undefined = finalPerfMap ? finalPerfMap[name] : undefined;
         
         return (
             <div className="flex items-center gap-1.5 whitespace-nowrap overflow-hidden">
@@ -308,15 +309,7 @@ const MarketIndexView: React.FC<Props> = ({ twIndices, usIndices }) => {
                         />
                         <YAxis width={30} tickFormatter={(val) => `${Math.round(val)}%`} tick={{ fontSize: 9, fill: '#94a3b8' }} tickLine={false} axisLine={false} />
                         <Legend 
-                            content={<RenderCustomLegend />}
-                            payload={data.sortedNames.map((name, idx) => {
-                                return {
-                                    value: `${name}|||${data.finalPerfMap[name]}`,
-                                    type: 'circle',
-                                    id: name,
-                                    color: COLORS[idx % COLORS.length]
-                                };
-                            })}
+                            content={<RenderCustomLegend finalPerfMap={data.finalPerfMap} sortedNames={data.sortedNames} />}
                         />
                         {data.sortedNames.slice().reverse().map((name) => {
                             const idx = data.sortedNames.indexOf(name);

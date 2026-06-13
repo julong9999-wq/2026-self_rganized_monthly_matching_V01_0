@@ -50,10 +50,10 @@ const RenderCustomLegend = (props: any) => {
     };
 
     return (
-        <div className="w-full mt-4 px-2 tracking-tighter">
-            <div className="grid grid-cols-3 gap-y-2 gap-x-1 w-full justify-items-start">
+        <div className="w-full mt-2 px-2 pb-1 overflow-hidden">
+            <div className="grid grid-cols-3 gap-y-2 gap-x-2 w-full">
                 {sortedPayload.map((entry: any, index: number) => (
-                    <div key={`item-${index}`} className="w-full flex justify-start overflow-hidden">
+                    <div key={`item-${index}`} className="flex items-center overflow-hidden w-full">
                         {renderLegendItem(entry)}
                     </div>
                 ))}
@@ -66,7 +66,7 @@ const MarketIndexView: React.FC<Props> = ({ twIndices, usIndices }) => {
   const [activeTab, setActiveTab] = useState<'最新'|'振幅'|'反彈'|'下跌'>('最新');
 
   const data = useMemo(() => {
-    const allData = [...twIndices, ...usIndices];
+    const allData = [...twIndices, ...usIndices].map(d => ({ ...d }));
     
     const targetIndices = allData.filter(d => {
         const n = d.name.replace(/\s+/g, '');
@@ -243,7 +243,7 @@ const MarketIndexView: React.FC<Props> = ({ twIndices, usIndices }) => {
               <div className="w-full aspect-video">
                   <ResponsiveContainer width="100%" height="100%">
                       <ComposedChart data={transformed} margin={{ top: 2, right: 2, left: -20, bottom: 0 }}>
-                          <XAxis dataKey="displayDate" ticks={ticks} tick={{ fontSize: 9, fill: '#94a3b8' }} tickLine={false} axisLine={false} />
+                          <XAxis dataKey="displayDate" hide={true} />
                           <YAxis domain={[minVal, maxVal]} tick={{ fontSize: 9, fill: '#94a3b8' }} tickLine={false} axisLine={false} width={35} tickFormatter={(val) => Math.round(val).toLocaleString()} />
                           <Tooltip 
                               contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}

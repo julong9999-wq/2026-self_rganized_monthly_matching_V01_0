@@ -387,7 +387,7 @@ const HoldingAnalysisView: React.FC<Props> = ({ portfolio, stockDailyPrices }) =
                                     </td>
                                     <td className="px-1 py-1.5 whitespace-nowrap text-left text-slate-500 w-[70px]">{date1}</td>
                                     <td className="px-1 py-1.5 font-medium text-slate-500 text-right whitespace-nowrap w-[45px]">{fmtPrice(price1)}</td>
-                                    <td className={`px-2 py-1.5 text-right font-bold border-l border-slate-100 whitespace-nowrap w-[85px] text-slate-500`}>
+                                    <td className={`px-2 py-1.5 text-left font-bold border-l border-slate-100 whitespace-nowrap w-[85px] text-slate-500`}>
                                         {activeTab === '振幅' ? '' : prefix(val)}{fmtPrice(val)}
                                     </td>
                                 </tr>

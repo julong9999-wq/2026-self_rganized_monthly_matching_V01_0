@@ -25,54 +25,46 @@ const RenderCustomLegend = (props: any) => {
     for (let i = 0; i < payload.length; i += 3) {
         rows.push(payload.slice(i, i + 3));
     }
+    
+    const renderLegendItem = (item: any) => {
+        if (!item) return null;
+        let name = item.value;
+        let perf: number | undefined = undefined;
+        if (typeof item.value === 'string' && item.value.includes('|||')) {
+            const parts = item.value.split('|||');
+            name = parts[0];
+            if (parts[1] !== 'undefined') {
+                perf = parseFloat(parts[1]);
+            }
+        }
+        
+        return (
+            <div className="flex items-center gap-1.5 whitespace-nowrap overflow-hidden">
+                <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }} />
+                <span className="text-[11px] text-slate-700 truncate font-medium flex items-center pr-1 flex-1" title={name}>
+                    <span className="truncate">{name}</span>
+                    {perf !== undefined && (
+                        <span className={`ml-1 flex-shrink-0 ${perf >= 0 ? "text-red-500" : "text-green-500"}`}>
+                            {perf > 0 ? '+' : ''}{perf.toFixed(2)}%
+                        </span>
+                    )}
+                </span>
+            </div>
+        );
+    };
+
     return (
         <div className="w-full mt-4 px-2 tracking-tighter">
             {rows.map((row: any[], rIdx: number) => (
                 <div key={rIdx} className="flex justify-between items-center mb-3 w-full">
                     <div className="flex-1 flex justify-start">
-                        {row[0] && (
-                            <div className="flex items-center gap-1.5 whitespace-nowrap overflow-hidden">
-                                <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: row[0].color }} />
-                                <span className="text-[11px] text-slate-700 truncate font-medium flex items-center pr-1 flex-1" title={row[0].value}>
-                                    <span className="truncate">{row[0].value}</span>
-                                    {row[0].payload?.perf !== undefined && (
-                                        <span className={`ml-1 flex-shrink-0 ${row[0].payload.perf >= 0 ? "text-red-500" : "text-green-500"}`}>
-                                            {row[0].payload.perf > 0 ? '+' : ''}{row[0].payload.perf.toFixed(2)}%
-                                        </span>
-                                    )}
-                                </span>
-                            </div>
-                        )}
+                        {renderLegendItem(row[0])}
                     </div>
                     <div className="flex-1 flex justify-center">
-                        {row[1] && (
-                            <div className="flex items-center gap-1.5 whitespace-nowrap overflow-hidden">
-                                <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: row[1].color }} />
-                                <span className="text-[11px] text-slate-700 truncate font-medium flex items-center pr-1 flex-1" title={row[1].value}>
-                                    <span className="truncate">{row[1].value}</span>
-                                    {row[1].payload?.perf !== undefined && (
-                                        <span className={`ml-1 flex-shrink-0 ${row[1].payload.perf >= 0 ? "text-red-500" : "text-green-500"}`}>
-                                            {row[1].payload.perf > 0 ? '+' : ''}{row[1].payload.perf.toFixed(2)}%
-                                        </span>
-                                    )}
-                                </span>
-                            </div>
-                        )}
+                        {renderLegendItem(row[1])}
                     </div>
                     <div className="flex-1 flex justify-end">
-                        {row[2] && (
-                            <div className="flex items-center gap-1.5 whitespace-nowrap overflow-hidden">
-                                <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: row[2].color }} />
-                                <span className="text-[11px] text-slate-700 truncate font-medium flex items-center pr-1 flex-1" title={row[2].value}>
-                                    <span className="truncate">{row[2].value}</span>
-                                    {row[2].payload?.perf !== undefined && (
-                                        <span className={`ml-1 flex-shrink-0 ${row[2].payload.perf >= 0 ? "text-red-500" : "text-green-500"}`}>
-                                            {row[2].payload.perf > 0 ? '+' : ''}{row[2].payload.perf.toFixed(2)}%
-                                        </span>
-                                    )}
-                                </span>
-                            </div>
-                        )}
+                        {renderLegendItem(row[2])}
                     </div>
                 </div>
             ))}
@@ -431,11 +423,10 @@ const HoldingAnalysisView: React.FC<Props> = ({ portfolio, stockDailyPrices }) =
                             content={<RenderCustomLegend />} 
                             payload={data.sortedNames.map((name, idx) => {
                                 return {
-                                    value: name,
+                                    value: `${name}|||${data.finalPerfMap[name]}`,
                                     type: 'circle',
                                     id: name,
-                                    color: COLORS[idx % COLORS.length],
-                                    payload: { perf: data.finalPerfMap[name] }
+                                    color: COLORS[idx % COLORS.length]
                                 };
                             })}
                         />

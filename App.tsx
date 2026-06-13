@@ -122,7 +122,7 @@ const App: React.FC = () => {
   };
 
   // Helper to prevent infinite loading
-  const fetchWithTimeout = async (url: string, timeout = 10000) => {
+  const fetchWithTimeout = async (url: string, timeout = 15000) => {
     const controller = new AbortController();
     const id = setTimeout(() => controller.abort(), timeout);
     try {
@@ -139,7 +139,7 @@ const App: React.FC = () => {
   const smartFetch = async (url: string): Promise<string> => {
       // 1. Try Direct Fetch
       try {
-          const res = await fetchWithTimeout(url, 8000);
+          const res = await fetchWithTimeout(url, 15000);
           if (res.ok) {
               return await res.text();
           }
@@ -150,7 +150,7 @@ const App: React.FC = () => {
       // 2. Try Proxy (AllOrigins)
       try {
           const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
-          const res = await fetchWithTimeout(proxyUrl, 15000);
+          const res = await fetchWithTimeout(proxyUrl, 25000);
           if (res.ok) {
               return await res.text();
           }
@@ -405,15 +405,13 @@ const App: React.FC = () => {
             return '';
         }) : Promise.resolve('');
 
-        const [txt1, txt2, txt3, txt4, txt5] = await Promise.all([
-            smartFetch(csvUrl1),
-            smartFetch(csvUrl2),
-            safeFetch(csvUrl3),
-            safeFetch(csvUrl4),
-            safeFetch(csvUrl5)
-        ]);
+        const txt1 = await smartFetch(csvUrl1);
+        const txt2 = await smartFetch(csvUrl2);
+        const txt3 = await safeFetch(csvUrl3);
+        const txt4 = await safeFetch(csvUrl4);
+        const txt5 = await safeFetch(csvUrl5);
 
-        if (txt1.trim().startsWith("<!DOCTYPE") || txt2.trim().startsWith("<!DOCTYPE")) {
+        if (txt1.trim().startsWith("<!DOCTYPE") || txt2.trim().startsWith("<!DOCTYPE") || txt3.trim().startsWith("<!DOCTYPE") || txt4.trim().startsWith("<!DOCTYPE")) {
             throw new Error("抓取到的不是 CSV 資料");
         }
 
@@ -694,16 +692,26 @@ const App: React.FC = () => {
   return (
     <div className="flex flex-col h-screen bg-slate-50 font-sans text-slate-900 max-w-md mx-auto shadow-2xl overflow-hidden border-x border-slate-200 relative">
       <header className="bg-blue-900 text-white h-20 shrink-0 flex items-center justify-between px-4 shadow-md z-20 relative">
-        <div className="flex items-center justify-start z-10 w-20">
+        <div className="flex items-center justify-start z-10 gap-3 w-32">
             {isConfigured && (
-                <button 
-                    onClick={handleReset}
-                    disabled={isLoading}
-                    className={`p-2 rounded-full hover:bg-blue-800 transition-all text-blue-100 hover:text-white ${isLoading ? 'opacity-50' : ''}`}
-                    title="設定資料來源"
-                >
-                    <Settings className="w-6 h-6" />
-                </button>
+                <>
+                    <button 
+                        onClick={handleReset}
+                        disabled={isLoading}
+                        className={`p-2 rounded-full hover:bg-blue-800 transition-all text-blue-100 hover:text-white ${isLoading ? 'opacity-50' : ''}`}
+                        title="設定資料來源"
+                    >
+                        <Settings className="w-6 h-6" />
+                    </button>
+                    <button
+                        onClick={() => handleStartDataLoad(DEFAULT_URL_1, DEFAULT_URL_2, DEFAULT_URL_3, DEFAULT_URL_4, DEFAULT_URL_5, true)}
+                        className={`text-blue-100 hover:text-white transition-colors cursor-pointer active:scale-95 ${isLoading ? 'animate-spin opacity-50' : ''}`}
+                        title="強制重新整理"
+                        disabled={isLoading}
+                     >
+                        <RefreshCcw className="w-5 h-5" />
+                     </button>
+                 </>
             )}
         </div>
         
@@ -712,21 +720,11 @@ const App: React.FC = () => {
         </div>
 
         <div className="flex items-center justify-end z-10 gap-3 w-32">
-             {isConfigured && (
-                 <button
-                    onClick={() => handleStartDataLoad(DEFAULT_URL_1, DEFAULT_URL_2, DEFAULT_URL_3, DEFAULT_URL_4, DEFAULT_URL_5, true)}
-                    className={`text-blue-100 hover:text-white transition-colors cursor-pointer active:scale-95 ${isLoading ? 'animate-spin opacity-50' : ''}`}
-                    title="強制重新整理"
-                    disabled={isLoading}
-                 >
-                    <RefreshCcw className="w-5 h-5" />
-                 </button>
-             )}
              <button
                 onClick={() => setShowBetaModal(true)}
                 className="text-[13px] font-bold text-yellow-300 tracking-wider border border-yellow-400/30 px-2 py-1 rounded bg-yellow-400/10 whitespace-nowrap hover:bg-yellow-400/20 transition-colors cursor-pointer active:scale-95"
             >
-                版本:V01.1
+                V01.1
             </button>
         </div>
       </header>

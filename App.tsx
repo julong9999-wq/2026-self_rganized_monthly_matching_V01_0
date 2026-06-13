@@ -27,12 +27,12 @@ const LOCAL_STORAGE_KEY_API = 'gemini_api_key';
 
 type Tab = 'performance' | 'portfolio' | 'analysis' | 'market_index' | 'holding_analysis' | 'announcement';
 
-const CACHE_KEY_DATA_1 = 'sheet_data_1_v6';
-const CACHE_KEY_DATA_2 = 'sheet_data_2_v6';
-const CACHE_KEY_DATA_3 = 'sheet_data_3_v6';
-const CACHE_KEY_DATA_4 = 'sheet_data_4_v6';
-const CACHE_KEY_DATA_5 = 'sheet_data_5_v6';
-const CACHE_KEY_TIME = 'sheet_last_fetch_time_v6';
+const CACHE_KEY_DATA_1 = 'sheet_data_1_v7';
+const CACHE_KEY_DATA_2 = 'sheet_data_2_v7';
+const CACHE_KEY_DATA_3 = 'sheet_data_3_v7';
+const CACHE_KEY_DATA_4 = 'sheet_data_4_v7';
+const CACHE_KEY_DATA_5 = 'sheet_data_5_v7';
+const CACHE_KEY_TIME = 'sheet_last_fetch_time_v7';
 const CACHE_KEY_PORTFOLIO = 'user_portfolio_v1'; // 新增 Portfolio 儲存 Key
 const CACHE_DURATION = 60 * 1000; // 1 分鐘
 

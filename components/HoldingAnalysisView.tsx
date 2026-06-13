@@ -146,7 +146,7 @@ const HoldingAnalysisView: React.FC<Props> = ({ portfolio, stockDailyPrices }) =
         if (minClose === Infinity) minClose = 0;
         if (maxClose === -Infinity) maxClose = 0;
 
-        const amplitudePct = minClose ? ((maxClose - minClose) / minClose) * 100 : 0;
+        const amplitudePct = maxClose ? ((minClose / maxClose) - 1) * 100 : 0;
         const reboundPct = minClose ? ((latestPrice - minClose) / minClose) * 100 : 0;
         const drawdownPct = maxClose ? ((latestPrice - maxClose) / maxClose) * 100 : 0;
 
@@ -382,22 +382,22 @@ const HoldingAnalysisView: React.FC<Props> = ({ portfolio, stockDailyPrices }) =
                         return (
                             <React.Fragment key={s.code}>
                                 <tr className="bg-slate-50/50 hover:bg-slate-100 cursor-pointer" onClick={() => setSelectedETF(s)}>
-                                    <td className="px-2 py-1.5 font-bold text-black text-[14px] align-middle w-24 border-r border-slate-100 whitespace-nowrap text-left">
+                                    <td className="px-2 py-1.5 font-bold text-black text-[14px] align-middle w-[90px] border-r border-slate-100 whitespace-nowrap text-left">
                                         {s.code}
                                     </td>
-                                    <td className="px-2 py-1.5 whitespace-nowrap text-left text-slate-500">{date1}</td>
-                                    <td className="px-2 py-1.5 font-medium text-slate-500 text-right whitespace-nowrap">{fmtPrice(price1)}</td>
-                                    <td className={`px-2 py-1.5 text-left font-bold border-l border-slate-100 whitespace-nowrap ${colorClass}`}>
+                                    <td className="px-1 py-1.5 whitespace-nowrap text-left text-slate-500 w-[70px]">{date1}</td>
+                                    <td className="px-1 py-1.5 font-medium text-slate-500 text-right whitespace-nowrap w-[45px]">{fmtPrice(price1)}</td>
+                                    <td className={`px-2 py-1.5 text-right font-bold border-l border-slate-100 whitespace-nowrap w-[85px] text-slate-500`}>
                                         {activeTab === '振幅' ? '' : prefix(val)}{fmtPrice(val)}
                                     </td>
                                 </tr>
                                 <tr className="bg-white hover:bg-slate-50 cursor-pointer" onClick={() => setSelectedETF(s)}>
-                                    <td className="px-2 py-1.5 font-normal text-slate-500 text-[12px] align-middle w-24 border-r border-slate-100 whitespace-nowrap text-left">
+                                    <td className="px-2 py-1.5 font-normal text-slate-500 text-[12px] align-middle w-[90px] border-r border-slate-100 whitespace-nowrap text-left truncate max-w-[90px]">
                                         {s.name}
                                     </td>
-                                    <td className="px-2 py-1.5 whitespace-nowrap text-left text-slate-500">{date2}</td>
-                                    <td className="px-2 py-1.5 text-right font-medium text-slate-500 whitespace-nowrap">{fmtPrice(price2)}</td>
-                                    <td className={`px-2 py-1.5 font-bold text-right whitespace-nowrap ${colorClass}`}>
+                                    <td className="px-1 py-1.5 whitespace-nowrap text-left text-slate-500 w-[70px]">{date2}</td>
+                                    <td className="px-1 py-1.5 text-right font-medium text-slate-500 whitespace-nowrap w-[45px]">{fmtPrice(price2)}</td>
+                                    <td className={`px-2 py-1.5 font-bold text-right whitespace-nowrap ${colorClass} w-[85px]`}>
                                         {activeTab === '振幅' ? '' : prefix(pct)}{pct.toFixed(2)}%
                                     </td>
                                 </tr>

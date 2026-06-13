@@ -149,7 +149,7 @@ const MarketIndexView: React.FC<Props> = ({ twIndices, usIndices }) => {
         if (minClose === Infinity) minClose = 0;
         if (maxClose === -Infinity) maxClose = 0;
 
-        const amplitudePct = minClose ? ((maxClose - minClose) / minClose) * 100 : 0;
+        const amplitudePct = maxClose ? ((minClose / maxClose) - 1) * 100 : 0;
         const reboundPct = minClose ? ((latestPrice - minClose) / minClose) * 100 : 0;
         const drawdownPct = maxClose ? ((latestPrice - maxClose) / maxClose) * 100 : 0;
 

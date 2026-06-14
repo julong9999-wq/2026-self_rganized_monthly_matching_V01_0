@@ -70,7 +70,7 @@ const MarketIndexView: React.FC<Props> = ({ twIndices, usIndices }) => {
     
     const targetIndices = allData.filter(d => {
         const n = d.name.replace(/\s+/g, '');
-        return n.includes('加權') || n.includes('道瓊') || n.includes('那斯達克') || n.includes('費城') || n.includes('標普500');
+        return n.includes('加權') || n.includes('道瓊') || n.includes('那斯達克') || n.includes('那指') || n.includes('費城') || n.includes('半導體') || n.includes('費半') || n.includes('標普500') || n.includes('標普');
     });
 
     targetIndices.forEach(d => {
@@ -337,87 +337,91 @@ const MarketIndexView: React.FC<Props> = ({ twIndices, usIndices }) => {
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-2">
             <table className="w-full text-xs text-slate-700">
                 <tbody className="divide-y divide-slate-100">
-                    {data.stats.map(s => (
-                        <React.Fragment key={s.name}>
-                            <tr className="bg-slate-50/50">
-                                <td rowSpan={2} className="px-2 py-2 font-bold text-slate-800 align-middle w-12 border-r border-slate-100 whitespace-nowrap text-center">
-                                    {s.name}
-                                </td>
-                                {activeTab === '最新' && (
-                                    <>
-                                        <td className="px-2 py-1.5 whitespace-nowrap text-center text-slate-500">{s.latestDate}</td>
-                                        <td className={`px-2 py-1.5 text-right font-medium whitespace-nowrap ${valColor(s.dailyChange)}`}>
-                                            {prefix(s.dailyChange)}{s.dailyChange.toFixed(2)}
-                                        </td>
-                                    </>
-                                )}
-                                {activeTab === '振幅' && (
-                                    <>
-                                        <td className="px-2 py-1.5 whitespace-nowrap text-center text-slate-500">{s.dateMax}</td>
-                                        <td className="px-2 py-1.5 text-right font-medium text-slate-800 whitespace-nowrap">{fmtPrice(s.maxClose)}</td>
-                                        <td className="px-2 py-1.5 font-bold border-l border-slate-100 text-center whitespace-nowrap text-blue-600">
-                                            {fmtPrice(s.maxClose - s.minClose)}
-                                        </td>
-                                    </>
-                                )}
-                                {activeTab === '反彈' && (
-                                    <>
-                                        <td className="px-2 py-1.5 whitespace-nowrap text-center text-slate-500">{s.dateMin}</td>
-                                        <td className="px-2 py-1.5 text-right font-medium text-slate-800 whitespace-nowrap">{fmtPrice(s.minClose)}</td>
-                                        <td className={`px-2 py-1.5 font-bold border-l border-slate-100 text-center whitespace-nowrap ${valColor(s.latestPrice - s.minClose)}`}>
-                                            {prefix(s.latestPrice - s.minClose)}{fmtPrice(s.latestPrice - s.minClose)}
-                                        </td>
-                                    </>
-                                )}
-                                {activeTab === '下跌' && (
-                                    <>
-                                        <td className="px-2 py-1.5 whitespace-nowrap text-center text-slate-500">{s.dateMax}</td>
-                                        <td className="px-2 py-1.5 text-right font-medium text-slate-800 whitespace-nowrap">{fmtPrice(s.maxClose)}</td>
-                                        <td className={`px-2 py-1.5 font-bold border-l border-slate-100 text-center whitespace-nowrap ${valColor(s.latestPrice - s.maxClose)}`}>
-                                            {prefix(s.latestPrice - s.maxClose)}{fmtPrice(s.latestPrice - s.maxClose)}
-                                        </td>
-                                    </>
-                                )}
-                            </tr>
-                            <tr className="bg-white">
-                                {activeTab === '最新' && (
-                                    <>
-                                        <td className="px-2 py-1.5 font-medium text-slate-800 text-center whitespace-nowrap">{fmtPrice(s.latestPrice)}</td>
-                                        <td className={`px-2 py-1.5 font-medium text-right whitespace-nowrap ${pctColor(s.dailyChangePct)}`}>
-                                            {s.dailyChangePct > 0 ? '+' : ''}{s.dailyChangePct.toFixed(2)}%
-                                        </td>
-                                    </>
-                                )}
-                                {activeTab === '振幅' && (
-                                    <>
-                                        <td className="px-2 py-1.5 whitespace-nowrap text-center text-slate-500">{s.dateMin}</td>
-                                        <td className="px-2 py-1.5 text-right font-medium text-slate-800 whitespace-nowrap">{fmtPrice(s.minClose)}</td>
-                                        <td className={`px-2 py-1.5 font-bold text-right whitespace-nowrap text-blue-600`}>
-                                            {s.amplitudePct.toFixed(2)}%
-                                        </td>
-                                    </>
-                                )}
-                                {activeTab === '反彈' && (
-                                    <>
-                                        <td className="px-2 py-1.5 whitespace-nowrap text-center text-slate-500">{s.latestDate}</td>
-                                        <td className="px-2 py-1.5 text-right font-medium text-blue-600 whitespace-nowrap">{fmtPrice(s.latestPrice)}</td>
-                                        <td className={`px-2 py-1.5 font-bold text-right whitespace-nowrap ${pctColor(s.reboundPct)}`}>
-                                            {s.reboundPct > 0 ? '+' : ''}{s.reboundPct.toFixed(2)}%
-                                        </td>
-                                    </>
-                                )}
-                                {activeTab === '下跌' && (
-                                    <>
-                                        <td className="px-2 py-1.5 whitespace-nowrap text-center text-slate-500">{s.latestDate}</td>
-                                        <td className="px-2 py-1.5 text-right font-medium text-blue-600 whitespace-nowrap">{fmtPrice(s.latestPrice)}</td>
-                                        <td className={`px-2 py-1.5 font-bold text-right whitespace-nowrap ${pctColor(s.drawdownPct)}`}>
-                                            {s.drawdownPct > 0 ? '+' : ''}{s.drawdownPct.toFixed(2)}%
-                                        </td>
-                                    </>
-                                )}
-                            </tr>
-                        </React.Fragment>
-                    ))}
+                    {data.stats.map(s => {
+                        if (activeTab === '最新') {
+                            return (
+                                <tr key={s.name} className="bg-white">
+                                    <td className="px-2 py-2 font-bold text-slate-800 align-middle w-12 border-r border-slate-100 whitespace-nowrap text-center">
+                                        {s.name}
+                                    </td>
+                                    <td className="px-2 py-1.5 whitespace-nowrap text-center text-slate-500">{s.latestDate}</td>
+                                    <td className="px-2 py-1.5 font-medium text-slate-500 text-right whitespace-nowrap">{fmtPrice(s.latestPrice)}</td>
+                                    <td className={`px-2 py-1.5 font-medium text-right whitespace-nowrap ${valColor(s.dailyChange)}`}>
+                                        {prefix(s.dailyChange)}{s.dailyChange.toFixed(2)}
+                                    </td>
+                                    <td className={`px-2 py-1.5 font-medium text-right whitespace-nowrap ${pctColor(s.dailyChangePct)}`}>
+                                        {s.dailyChangePct > 0 ? '+' : ''}{s.dailyChangePct.toFixed(2)}%
+                                    </td>
+                                </tr>
+                            );
+                        }
+
+                        return (
+                            <React.Fragment key={s.name}>
+                                <tr className="bg-slate-50/50">
+                                    <td rowSpan={2} className="px-2 py-2 font-bold text-slate-800 align-middle w-12 border-r border-slate-100 whitespace-nowrap text-center">
+                                        {s.name}
+                                    </td>
+                                    {activeTab === '振幅' && (
+                                        <>
+                                            <td className="px-2 py-1.5 whitespace-nowrap text-center text-slate-500">{s.dateMax}</td>
+                                            <td className="px-2 py-1.5 text-right font-medium text-slate-500 whitespace-nowrap">{fmtPrice(s.maxClose)}</td>
+                                            <td className="px-2 py-1.5 font-bold border-l border-slate-100 text-center whitespace-nowrap text-slate-500">
+                                                {fmtPrice(s.maxClose - s.minClose)}
+                                            </td>
+                                        </>
+                                    )}
+                                    {activeTab === '反彈' && (
+                                        <>
+                                            <td className="px-2 py-1.5 whitespace-nowrap text-center text-slate-500">{s.dateMin}</td>
+                                            <td className="px-2 py-1.5 text-right font-medium text-slate-500 whitespace-nowrap">{fmtPrice(s.minClose)}</td>
+                                            <td className="px-2 py-1.5 font-bold border-l border-slate-100 text-center whitespace-nowrap text-slate-500">
+                                                {prefix(s.latestPrice - s.minClose)}{fmtPrice(s.latestPrice - s.minClose)}
+                                            </td>
+                                        </>
+                                    )}
+                                    {activeTab === '下跌' && (
+                                        <>
+                                            <td className="px-2 py-1.5 whitespace-nowrap text-center text-slate-500">{s.dateMax}</td>
+                                            <td className="px-2 py-1.5 text-right font-medium text-slate-500 whitespace-nowrap">{fmtPrice(s.maxClose)}</td>
+                                            <td className="px-2 py-1.5 font-bold border-l border-slate-100 text-center whitespace-nowrap text-slate-500">
+                                                {prefix(s.latestPrice - s.maxClose)}{fmtPrice(s.latestPrice - s.maxClose)}
+                                            </td>
+                                        </>
+                                    )}
+                                </tr>
+                                <tr className="bg-white">
+                                    {activeTab === '振幅' && (
+                                        <>
+                                            <td className="px-2 py-1.5 whitespace-nowrap text-center text-slate-500">{s.dateMin}</td>
+                                            <td className="px-2 py-1.5 text-right font-medium text-slate-500 whitespace-nowrap">{fmtPrice(s.minClose)}</td>
+                                            <td className={`px-2 py-1.5 font-bold text-right whitespace-nowrap text-blue-600`}>
+                                                {s.amplitudePct.toFixed(2)}%
+                                            </td>
+                                        </>
+                                    )}
+                                    {activeTab === '反彈' && (
+                                        <>
+                                            <td className="px-2 py-1.5 whitespace-nowrap text-center text-slate-500">{s.latestDate}</td>
+                                            <td className="px-2 py-1.5 text-right font-medium text-slate-500 whitespace-nowrap">{fmtPrice(s.latestPrice)}</td>
+                                            <td className={`px-2 py-1.5 font-bold text-right whitespace-nowrap ${pctColor(s.reboundPct)}`}>
+                                                {s.reboundPct > 0 ? '+' : ''}{s.reboundPct.toFixed(2)}%
+                                            </td>
+                                        </>
+                                    )}
+                                    {activeTab === '下跌' && (
+                                        <>
+                                            <td className="px-2 py-1.5 whitespace-nowrap text-center text-slate-500">{s.latestDate}</td>
+                                            <td className="px-2 py-1.5 text-right font-medium text-slate-500 whitespace-nowrap">{fmtPrice(s.latestPrice)}</td>
+                                            <td className={`px-2 py-1.5 font-bold text-right whitespace-nowrap ${pctColor(s.drawdownPct)}`}>
+                                                {s.drawdownPct > 0 ? '+' : ''}{s.drawdownPct.toFixed(2)}%
+                                            </td>
+                                        </>
+                                    )}
+                                </tr>
+                            </React.Fragment>
+                        );
+                    })}
                 </tbody>
             </table>
         </div>

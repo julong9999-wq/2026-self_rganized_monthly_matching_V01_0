@@ -40,7 +40,7 @@ const getColor = (val: number) => val > 0 ? 'text-red-600' : val < 0 ? 'text-gre
 
 const DailyAnalysisView: React.FC<Props> = ({ etfs, portfolio }) => {
   const [filter, setFilter] = useState<FilterType>('quarterly');
-  const [expandedAnalysis, setExpandedAnalysis] = useState<string[]>(['E', 'F', 'G']);
+  const [expandedAnalysis, setExpandedAnalysis] = useState<string[]>([]);
 
   const toggleAnalysis = (key: string) => {
       setExpandedAnalysis(prev => 
@@ -99,16 +99,18 @@ const DailyAnalysisView: React.FC<Props> = ({ etfs, portfolio }) => {
 
           const changePrice = item.etf.priceCurrent - prevPrice;
           const changeValue = changePrice * totalShares;
-          totalDailyChangeValue += changeValue;
 
-          dailyPerformanceList.push({
-              id: item.id,
-              name: item.etf.name,
-              shares: totalShares,
-              changePrice: changePrice,
-              changeValue: changeValue,
-              prevPrice: prevPrice
-          });
+          if (totalShares > 0) {
+              totalDailyChangeValue += changeValue;
+              dailyPerformanceList.push({
+                  id: item.id,
+                  name: item.etf.name,
+                  shares: totalShares,
+                  changePrice: changePrice,
+                  changeValue: changeValue,
+                  prevPrice: prevPrice
+              });
+          }
 
           if (totalShares > 0) {
               const monthlyDivs = item.etf.dividends.filter(d => {
@@ -135,7 +137,7 @@ const DailyAnalysisView: React.FC<Props> = ({ etfs, portfolio }) => {
       });
       
       currentMonthDividendsList.sort((a,b) => parseDateSimple(a.date) - parseDateSimple(b.date));
-      dailyPerformanceList.sort((a, b) => Math.abs(b.changeValue) - Math.abs(a.changeValue));
+      dailyPerformanceList.sort((a, b) => b.changeValue - a.changeValue);
 
       return {
           currentMonthDividendsList,
@@ -245,7 +247,7 @@ const DailyAnalysisView: React.FC<Props> = ({ etfs, portfolio }) => {
                                   <div className="flex flex-col">
                                        <span className="text-[12px] font-light text-slate-500">除息金額</span>
                                        <div className="flex items-baseline gap-1">
-                                          <span className="text-[16px] font-bold text-slate-800">{row.unitAmount}</span>
+                                          <span className="text-[16px] font-bold text-slate-800">{row.unitAmount.toFixed(3)}</span>
                                           <span className="text-[10px] text-slate-400">({row.date})</span>
                                        </div>
                                   </div>
@@ -336,7 +338,7 @@ const DailyAnalysisView: React.FC<Props> = ({ etfs, portfolio }) => {
                       <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-3">
                           <button
                               onClick={() => setFilter('quarterly')}
-                              className={`flex-1 min-w-[80px] py-2 rounded-xl font-bold text-sm transition-all border whitespace-nowrap ${
+                              className={`flex-1 min-w-[70px] py-1.5 rounded-lg font-bold text-xs transition-all border whitespace-nowrap ${
                                   filter === 'quarterly' 
                                   ? 'bg-blue-900 text-white border-blue-900 shadow-md' 
                                   : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
@@ -346,7 +348,7 @@ const DailyAnalysisView: React.FC<Props> = ({ etfs, portfolio }) => {
                           </button>
                           <button
                               onClick={() => setFilter('monthly')}
-                              className={`flex-1 min-w-[80px] py-2 rounded-xl font-bold text-sm transition-all border whitespace-nowrap ${
+                              className={`flex-1 min-w-[70px] py-1.5 rounded-lg font-bold text-xs transition-all border whitespace-nowrap ${
                                   filter === 'monthly' 
                                   ? 'bg-amber-500 text-white border-amber-500 shadow-md' 
                                   : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
@@ -356,7 +358,7 @@ const DailyAnalysisView: React.FC<Props> = ({ etfs, portfolio }) => {
                           </button>
                           <button
                               onClick={() => setFilter('bond')}
-                              className={`flex-1 min-w-[80px] py-2 rounded-xl font-bold text-sm transition-all border whitespace-nowrap ${
+                              className={`flex-1 min-w-[70px] py-1.5 rounded-lg font-bold text-xs transition-all border whitespace-nowrap ${
                                   filter === 'bond' 
                                   ? 'bg-emerald-600 text-white border-emerald-600 shadow-md' 
                                   : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
@@ -366,7 +368,7 @@ const DailyAnalysisView: React.FC<Props> = ({ etfs, portfolio }) => {
                           </button>
                           <button
                               onClick={() => setFilter('other')}
-                              className={`flex-1 min-w-[80px] py-2 rounded-xl font-bold text-sm transition-all border whitespace-nowrap ${
+                              className={`flex-1 min-w-[70px] py-1.5 rounded-lg font-bold text-xs transition-all border whitespace-nowrap ${
                                   filter === 'other' 
                                   ? 'bg-slate-600 text-white border-slate-600 shadow-md' 
                                   : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'

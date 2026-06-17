@@ -6,7 +6,7 @@ import { analyzeSheets } from './services/geminiService';
 import PerformanceView from './components/PerformanceView';
 import PortfolioView from './components/PortfolioView';
 import SheetConfigView from './components/SheetConfigView';
-import AnnouncementView from './components/AnnouncementView';
+import DailyAnalysisView from './components/DailyAnalysisView';
 import MarketIndexView from './components/MarketIndexView';
 import HoldingAnalysisView from './components/HoldingAnalysisView';
 import AnalysisView from './components/AnalysisView';
@@ -25,7 +25,7 @@ const DEFAULT_URL_5 = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQaRKeSBt
 const getBaseDateStr = () => getDynamicBaseDateStr();
 const LOCAL_STORAGE_KEY_API = 'gemini_api_key';
 
-type Tab = 'performance' | 'portfolio' | 'analysis' | 'market_index' | 'holding_analysis' | 'announcement';
+type Tab = 'performance' | 'portfolio' | 'analysis' | 'market_index' | 'holding_analysis' | 'daily_analysis';
 
 const CACHE_KEY_DATA_1 = 'sheet_data_1_v7';
 const CACHE_KEY_DATA_2 = 'sheet_data_2_v7';
@@ -586,7 +586,7 @@ const App: React.FC = () => {
           case 'analysis': return '投資分析';
           case 'market_index': return '大盤指數';
           case 'holding_analysis': return '持股分析';
-          case 'announcement': return '配息公告';
+          case 'daily_analysis': return '每日分析';
           default: return '投資助理';
       }
   };
@@ -671,10 +671,10 @@ const App: React.FC = () => {
                 </div>
             );
 
-          case 'announcement':
+          case 'daily_analysis':
             return (
                 <div className="h-full overflow-hidden">
-                    <AnnouncementView etfs={etfs} />
+                    <DailyAnalysisView etfs={etfs} portfolio={portfolio} />
                 </div>
             );
             
@@ -991,8 +991,8 @@ const App: React.FC = () => {
             <button onClick={() => setActiveTab('holding_analysis')} className={`flex flex-col items-center justify-center h-full gap-1 transition-colors ${activeTab === 'holding_analysis' ? 'text-yellow-400' : 'text-slate-300 hover:text-white'}`}>
                 <Briefcase className="w-5 h-5" /><span className="text-[10px] font-medium whitespace-nowrap">持股分析</span>
             </button>
-            <button onClick={() => setActiveTab('announcement')} className={`flex flex-col items-center justify-center h-full gap-1 transition-colors ${activeTab === 'announcement' ? 'text-yellow-400' : 'text-slate-300 hover:text-white'}`}>
-                <Megaphone className="w-5 h-5" /><span className="text-[10px] font-medium whitespace-nowrap">配息公告</span>
+            <button onClick={() => setActiveTab('daily_analysis')} className={`flex flex-col items-center justify-center h-full gap-1 transition-colors ${activeTab === 'daily_analysis' ? 'text-yellow-400' : 'text-slate-300 hover:text-white'}`}>
+                <Megaphone className="w-5 h-5" /><span className="text-[10px] font-medium whitespace-nowrap">每日分析</span>
             </button>
           </nav>
       )}

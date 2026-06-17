@@ -56,6 +56,8 @@ const DailyAnalysisView: React.FC<Props> = ({ etfs, portfolio }) => {
       const currentMonth = todayDate.getMonth();
       const currentMonthDividendsList: any[] = [];
       let totalCurrentMonthIncome = 0;
+      let totalTodayDividendIncome = 0;
+      let todayDividendsList: any[] = [];
       
       const dailyPerformanceList: any[] = [];
       let totalDailyChangeValue = 0;
@@ -123,6 +125,22 @@ const DailyAnalysisView: React.FC<Props> = ({ etfs, portfolio }) => {
               monthlyDivs.forEach(d => {
                   const income = totalShares * d.amount;
                   totalCurrentMonthIncome += income;
+                  
+                  const dVal = parseDateSimple(d.date);
+                  const dDate = new Date(dVal);
+                  if (dDate.getDate() === todayDate.getDate()) {
+                      totalTodayDividendIncome += income;
+                      todayDividendsList.push({
+                          id: item.id,
+                          name: item.etf.name,
+                          shares: totalShares,
+                          unitAmount: d.amount,
+                          totalAmount: income,
+                          date: d.date,
+                          paymentDate: d.paymentDate
+                      });
+                  }
+
                   currentMonthDividendsList.push({
                       id: item.id,
                       name: item.etf.name,
@@ -144,6 +162,8 @@ const DailyAnalysisView: React.FC<Props> = ({ etfs, portfolio }) => {
           dailyPerformanceList,
           totalCurrentMonthIncome,
           totalDailyChangeValue,
+          totalTodayDividendIncome,
+          todayDividendsList,
       };
   }, [portfolio]);
 
@@ -235,24 +255,24 @@ const DailyAnalysisView: React.FC<Props> = ({ etfs, portfolio }) => {
                           <div key={`${row.id}-${idx}`} className="bg-slate-50 p-3 rounded-lg border border-slate-100 flex flex-col gap-1">
                               <div className="flex justify-between items-center">
                                   <div className="flex flex-col">
-                                       <span className="text-[12px] font-light text-slate-500">ETF名稱</span>
+                                       <span className="text-[12px] font-light text-slate-500">名稱</span>
                                        <span className="text-[16px] font-light text-slate-600">{row.name} <span className="text-xs">({row.id})</span></span>
                                   </div>
                                   <div className="flex flex-col text-right">
-                                       <span className="text-[12px] font-light text-slate-500">購買股數</span>
+                                       <span className="text-[12px] font-light text-slate-500">股數</span>
                                        <span className="text-[16px] font-light text-slate-600">{formatShare(row.shares)}</span>
                                   </div>
                               </div>
                               <div className="flex justify-between items-center border-t border-slate-200/50 pt-1 mt-0.5">
                                   <div className="flex flex-col">
-                                       <span className="text-[12px] font-light text-slate-500">除息金額</span>
+                                       <span className="text-[12px] font-light text-slate-500">除息</span>
                                        <div className="flex items-baseline gap-1">
                                           <span className="text-[16px] font-bold text-slate-800">{row.unitAmount.toFixed(3)}</span>
                                           <span className="text-[10px] text-slate-400">({row.date})</span>
                                        </div>
                                   </div>
                                   <div className="flex flex-col text-right">
-                                       <span className="text-[12px] font-light text-slate-500">股息金額</span>
+                                       <span className="text-[12px] font-light text-slate-500">股息</span>
                                        <span className="text-[16px] font-bold text-slate-800">${formatMoney(row.totalAmount)}</span>
                                   </div>
                               </div>
@@ -280,22 +300,33 @@ const DailyAnalysisView: React.FC<Props> = ({ etfs, portfolio }) => {
                </div>
                {expandedAnalysis.includes('F') && (
                   <div className="px-3 pb-3 border-t border-slate-100 pt-2 space-y-2 animate-[fadeIn_0.2s_ease-out]">
+                      {analysisData.todayDividendsList.length > 0 && (
+                          <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-200 flex flex-col gap-1 mb-3">
+                              <div className="flex justify-between items-center text-yellow-800">
+                                  <span className="text-[14px] font-bold">今日除息彙整</span>
+                                  <span className="text-[16px] font-bold">${formatMoney(analysisData.totalTodayDividendIncome)}</span>
+                              </div>
+                              <div className="text-[12px] text-yellow-700 mt-1">
+                                  {analysisData.todayDividendsList.map(item => `${item.name} ($${formatMoney(item.totalAmount)})`).join(', ')}
+                              </div>
+                          </div>
+                      )}
                       {analysisData.dailyPerformanceList.length > 0 ? (
                           analysisData.dailyPerformanceList.map((row) => (
                               <div key={row.id} className="bg-slate-50 p-3 rounded-lg border border-slate-100 flex flex-col gap-1">
                                   <div className="flex justify-between items-center">
                                       <div className="flex flex-col">
-                                          <span className="text-[12px] font-light text-slate-500 mb-0.5">ETF名稱</span>
+                                          <span className="text-[12px] font-light text-slate-500 mb-0.5">名稱</span>
                                           <span className="text-[16px] font-light text-slate-700">{row.name}</span>
                                       </div>
                                       <div className="flex flex-col text-right">
-                                          <span className="text-[12px] font-light text-slate-500 mb-0.5">購買股數</span>
+                                          <span className="text-[12px] font-light text-slate-500 mb-0.5">股數</span>
                                           <span className="text-[16px] font-light text-slate-700">{formatShare(row.shares)}</span>
                                       </div>
                                   </div>
                                   <div className="flex justify-between items-center mt-2 pt-2 border-t border-slate-200/50">
                                       <div className="flex flex-col">
-                                          <span className="text-[12px] font-light text-slate-500 mb-0.5">漲跌值</span>
+                                          <span className="text-[12px] font-light text-slate-500 mb-0.5">漲跌</span>
                                           <div className="flex items-baseline gap-1">
                                               <span className={`text-[16px] font-bold ${getColor(row.changePrice)}`}>
                                                   {row.changePrice > 0 ? '+' : ''}{row.changePrice.toFixed(2)}
@@ -306,7 +337,7 @@ const DailyAnalysisView: React.FC<Props> = ({ etfs, portfolio }) => {
                                           </div>
                                       </div>
                                       <div className="flex flex-col text-right">
-                                          <span className="text-[12px] font-light text-slate-500 mb-0.5">漲跌金額</span>
+                                          <span className="text-[12px] font-light text-slate-500 mb-0.5">金額</span>
                                           <span className={`text-[16px] font-bold ${getColor(row.changeValue)}`}>
                                               {row.changeValue > 0 ? '+' : ''}{formatMoney(row.changeValue)}
                                           </span>

@@ -72,6 +72,13 @@ const DailyAnalysisView: React.FC<Props> = ({ etfs, portfolio }) => {
                const d = parseInt(cleanStr.substring(6, 8));
                return new Date(y, m, d).getTime();
           }
+          const parts = cleanStr.split(/[\/\-]/);
+          if (parts.length === 2 && !isNaN(parseInt(parts[0])) && !isNaN(parseInt(parts[1]))) {
+               const y = currentYear;
+               const m = parseInt(parts[0]) - 1;
+               const d = parseInt(parts[1]);
+               return new Date(y, m, d).getTime();
+          }
           const standardDate = new Date(cleanStr.replace(/\./g, '/').replace(/-/g, '/'));
           return isNaN(standardDate.getTime()) ? 0 : standardDate.getTime();
       };
@@ -598,22 +605,23 @@ const DailyAnalysisView: React.FC<Props> = ({ etfs, portfolio }) => {
                   <div className="px-2 pb-3 border-t border-slate-100 pt-2 animate-[fadeIn_0.2s_ease-out] flex flex-col gap-4">
                       {/* 圖表 */}
                       {analysisData.perfMonths.length > 0 ? (
-                          <div className="w-full h-[220px]">
+                          <div className="w-full h-[300px]">
                               <ResponsiveContainer width="100%" height="100%">
-                                  <BarChart data={analysisData.perfMonths} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
-                                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                                  <BarChart layout="vertical" data={analysisData.perfMonths} margin={{ top: 10, right: 20, left: 20, bottom: 0 }}>
+                                      <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E2E8F0" />
                                       <XAxis 
-                                        dataKey="label" 
-                                        axisLine={false} 
-                                        tickLine={false} 
-                                        tick={{ fontSize: 10, fill: '#64748B' }} 
-                                        dy={10} 
-                                      />
-                                      <YAxis 
+                                        type="number"
                                         axisLine={false} 
                                         tickLine={false} 
                                         tick={{ fontSize: 10, fill: '#64748B' }} 
                                         tickFormatter={(val) => Math.round(val/1000) + 'k'}
+                                      />
+                                      <YAxis 
+                                        dataKey="label"
+                                        type="category"
+                                        axisLine={false} 
+                                        tickLine={false} 
+                                        tick={{ fontSize: 10, fill: '#64748B' }} 
                                       />
                                       <Tooltip
                                         cursor={{ fill: 'rgba(241, 245, 249, 0.5)' }}
@@ -622,8 +630,8 @@ const DailyAnalysisView: React.FC<Props> = ({ etfs, portfolio }) => {
                                         labelStyle={{ fontWeight: 'bold', color: '#1E293B', marginBottom: '4px' }}
                                       />
                                       <Legend iconType="circle" wrapperStyle={{ fontSize: '12px', color: '#64748B' }} />
-                                      <Bar dataKey="perf" name="績效" stackId="a" fill="#ef4444" radius={[0, 0, 4, 4]} />
-                                      <Bar dataKey="yield" name="股息" stackId="a" fill="#22c55e" radius={[4, 4, 0, 0]} />
+                                      <Bar dataKey="perf" name="績效" stackId="a" fill="#ef4444" radius={[0, 0, 0, 0]} />
+                                      <Bar dataKey="yield" name="股息" stackId="a" fill="#22c55e" radius={[0, 4, 4, 0]} />
                                   </BarChart>
                               </ResponsiveContainer>
                           </div>

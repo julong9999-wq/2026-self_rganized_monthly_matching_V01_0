@@ -165,97 +165,100 @@ const DailyAnalysisView: React.FC<Props> = ({ etfs, portfolio }) => {
       currentMonthDividendsList.sort((a,b) => parseDateSimple(a.date) - parseDateSimple(b.date));
       dailyPerformanceList.sort((a, b) => b.changeValue - a.changeValue);
 
-      // --- 新增：年度績效分析 (從 2026/01 起) ---
+      // --- 新增：年度績效分析 (自訂 2025/12 開始) ---
       const perfMonths: { label: string; perf: number; yield: number; total: number; y: number; m: number }[] = [];
-      const START_YEAR = 2026;
-      for (let y = START_YEAR; y <= currentYear; y++) {
-          const mStart = (y === START_YEAR) ? 0 : 0;
+      const START_YEAR = 2025;
+      
+      // 依序產生 Y/M 列表，從 2025/12 到 本月
+      const monthsToProcess: {y: number, m: number, label: string}[] = [];
+      monthsToProcess.push({ y: 2025, m: 11, label: '2025/12' }); // 2025/12
+      
+      for (let y = 2026; y <= currentYear; y++) {
           const mEnd = (y === currentYear) ? currentMonth : 11;
-          
-          for (let m = mStart; m <= mEnd; m++) {
-               let valEoM = 0;
-               let valStart = 0;
-               let dividendMonth = 0;
+          for (let m = 0; m <= mEnd; m++) {
+               monthsToProcess.push({ y, m, label: `${y}/${String(m + 1).padStart(2, '0')}` });
+          }
+      }
 
-               portfolio.forEach(item => {
-                    const history = item.etf.priceHistory || [];
-                    const sortedHistory = [...history].sort((a,b) => parseDateSimple(a.date) - parseDateSimple(b.date));
-                    
-                    const getPricesInMonth = (year: number, month: number) => {
-                        return sortedHistory.filter(h => {
-                            const d = new Date(parseDateSimple(h.date));
-                            return d.getFullYear() === year && d.getMonth() === month;
-                        });
-                    };
+      // 預先準備好每個月的起點與終點價值
+      const monthValues: Record<string, { valEoM: number, valStart: number, dividendMonth: number }> = {};
 
-                    const getLatestPriceInMonth = (year: number, month: number, fallback: number) => {
-                        const inMonth = getPricesInMonth(year, month);
-                        if (inMonth.length > 0) return inMonth[inMonth.length - 1].price;
-                        return fallback;
-                    };
+      monthsToProcess.forEach(({y, m, label}) => {
+           let valEoM = 0;
+           let valStart = 0;
+           let dividendMonth = 0;
 
-                    const getEarliestPriceInMonth = (year: number, month: number, fallback: number) => {
-                        const inMonth = getPricesInMonth(year, month);
-                        if (inMonth.length > 0) return inMonth[0].price;
-                        return fallback;
-                    };
+           portfolio.forEach(item => {
+                const history = item.etf.priceHistory || [];
+                const sortedHistory = [...history].sort((a,b) => parseDateSimple(a.date) - parseDateSimple(b.date));
+                
+                const getPricesInMonth = (year: number, month: number) => {
+                    return sortedHistory.filter(h => {
+                        const d = new Date(parseDateSimple(h.date));
+                        return d.getFullYear() === year && d.getMonth() === month;
+                    });
+                };
 
-                    // 使用使用者「目前所有庫存張數」
-                    const totalShares = item.transactions.reduce((s, tx) => s + tx.shares, 0);
+                const totalShares = item.transactions.reduce((s, tx) => s + tx.shares, 0);
 
-                    // 取得月底股價 (如果是當月，則使用即時股價)
-                    let priceEnd = 0;
-                    if (m === currentMonth && y === currentYear) {
+                let priceStart = 0;
+                let priceEnd = 0;
+
+                if (y === 2025 && m === 11) {
+                     // 根據使用者條件：2025/12 的值預設等同於 2026-01 的第一筆（如 2026-01-02）
+                     const janPrices = getPricesInMonth(2026, 0);
+                     if (janPrices.length > 0) {
+                          priceStart = janPrices[0].price;
+                          priceEnd = priceStart; // 讓 valEoM 等於 valStart，因此績效為 0
+                     } else if (sortedHistory.length > 0) {
+                          priceStart = sortedHistory[0].price;
+                          priceEnd = priceStart;
+                     } else {
+                          priceStart = item.etf.priceBase;
+                          priceEnd = item.etf.priceBase;
+                     }
+                } else if (y === 2026 && m === 0) {
+                     // 1月: 開始值來自上月(2025/12)的值 (即 2026-01 的第一筆)，結束值即 1月底價格
+                     const janPrices = getPricesInMonth(2026, 0);
+                     if (janPrices.length > 0) {
+                         priceStart = janPrices[0].price; // 2026-01 第一個交易日 (例如 01-02)
+                         priceEnd = janPrices[janPrices.length - 1].price; // 1月底 (例如 01-30)
+                     } else {
+                         priceStart = item.etf.priceBase;
+                         priceEnd = item.etf.priceBase;
+                     }
+                } else {
+                     // 其他月份: 開始值為前一個月的月底最後價格，結束值為本月月底
+                     let prevM = m - 1;
+                     let prevY = y;
+                     if (prevM < 0) {
+                         prevM = 11;
+                         prevY--;
+                     }
+                     const prevPrices = getPricesInMonth(prevY, prevM);
+                     if (prevPrices.length > 0) {
+                         priceStart = prevPrices[prevPrices.length - 1].price;
+                     } else {
+                         priceStart = sortedHistory.length > 0 ? sortedHistory[0].price : item.etf.priceBase;
+                     }
+                     
+                     if (m === currentMonth && y === currentYear) {
                          priceEnd = item.etf.priceCurrent;
-                    } else {
-                         priceEnd = getLatestPriceInMonth(y, m, item.etf.priceBase);
-                    }
+                     } else {
+                         const currPrices = getPricesInMonth(y, m);
+                         if (currPrices.length > 0) {
+                             priceEnd = currPrices[currPrices.length - 1].price;
+                         } else {
+                             priceEnd = priceStart;
+                         }
+                     }
+                }
 
-                    // 取得月初(或上月底)股價
-                    let priceStart = 0;
-                    if (m === 0 && y === START_YEAR) { 
-                        // 1月為 1月底 - 1月初(1/2) 
-                        priceStart = getEarliestPriceInMonth(y, m, item.etf.priceBase);
-                        
-                        // 若歷史資料第一點不是 1月，保險起見我們抓整個 history 的第一點
-                        if (getPricesInMonth(y, m).length === 0 && sortedHistory.length > 0) {
-                             priceStart = sortedHistory[0].price;
-                        }
-                    } else { 
-                        // 2月以上: 使用前一個月底的最後一個交易日股價
-                        let prevM = m - 1;
-                        let prevY = y;
-                        if (prevM < 0) {
-                            prevM = 11;
-                            prevY--;
-                        }
-                        
-                        let searchM = prevM;
-                        let searchY = prevY;
-                        let foundPriceStart = getLatestPriceInMonth(searchY, searchM, 0);
-                        
-                        let lookback = 0;
-                        while (foundPriceStart === 0 && lookback < 3) {
-                            searchM--;
-                            if (searchM < 0) {
-                                searchM = 11;
-                                searchY--;
-                            }
-                            foundPriceStart = getLatestPriceInMonth(searchY, searchM, 0);
-                            lookback++;
-                        }
-                        
-                        priceStart = foundPriceStart || item.etf.priceBase;
-                    }
+                valEoM += (totalShares * priceEnd);
+                valStart += (totalShares * priceStart);
 
-                    // 若 priceStart 與 priceEnd 皆為 priceBase (沒有抓到歷史資料)
-                    // 這邊我們允許它為 0，如果使用者問起，再確認 CSV 資料是否有缺漏。
-                    // 但我們嘗試拿最接近的。
-
-                    valEoM += (totalShares * priceEnd);
-                    valStart += (totalShares * priceStart);
-
-                    // 月配股息計算 (統一用總張數)
+                // 月配股息計算
+                if (y >= 2026) {
                     item.etf.dividends.forEach(d => {
                         const dTs = parseDateSimple(d.date);
                         const monthEnd = new Date(y, m + 1, 0, 23, 59, 59).getTime();
@@ -264,19 +267,24 @@ const DailyAnalysisView: React.FC<Props> = ({ etfs, portfolio }) => {
                             dividendMonth += totalShares * d.amount;
                         }
                     });
-               });
-               
-               const perfMonth = valEoM - valStart; 
-               const label = `${y}/${String(m + 1).padStart(2, '0')}`;
-               perfMonths.push({
-                   label,
-                   perf: Math.round(perfMonth),
-                   yield: Math.round(dividendMonth),
-                   total: Math.round(perfMonth + dividendMonth),
-                   y, m
-               });
-          }
-      }
+                }
+           });
+
+           monthValues[label] = { valEoM, valStart, dividendMonth };
+      });
+
+      monthsToProcess.forEach(({ y, m, label }) => {
+           const { valEoM, valStart, dividendMonth } = monthValues[label];
+           // 對於 2025/12，valEoM === valStart，perf === 0
+           const perfMonth = valEoM - valStart; 
+           perfMonths.push({
+               label,
+               perf: Math.round(perfMonth),
+               yield: Math.round(dividendMonth),
+               total: Math.round(perfMonth + dividendMonth),
+               y, m
+           });
+      });
 
       return {
           currentMonthDividendsList,
@@ -622,12 +630,6 @@ const DailyAnalysisView: React.FC<Props> = ({ etfs, portfolio }) => {
                                         axisLine={false} 
                                         tickLine={false} 
                                         tick={{ fontSize: 10, fill: '#64748B' }} 
-                                      />
-                                      <Tooltip
-                                        cursor={{ fill: 'rgba(241, 245, 249, 0.5)' }}
-                                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', fontSize: '12px' }}
-                                        formatter={(value: number, name: string) => ['$' + formatMoney(value), name]}
-                                        labelStyle={{ fontWeight: 'bold', color: '#1E293B', marginBottom: '4px' }}
                                       />
                                       <Legend iconType="circle" wrapperStyle={{ fontSize: '12px', color: '#64748B' }} />
                                       <Bar dataKey="perf" name="績效" stackId="a" fill="#ef4444" radius={[0, 0, 0, 0]} />

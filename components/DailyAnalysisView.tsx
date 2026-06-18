@@ -166,77 +166,80 @@ const DailyAnalysisView: React.FC<Props> = ({ etfs, portfolio }) => {
           const mEnd = (y === currentYear) ? currentMonth : 11;
           
           for (let m = mStart; m <= mEnd; m++) {
-               const monthStartTs = new Date(y, m, 1).getTime();
-               const monthEnd = new Date(y, m + 1, 0); // 本月最後一天
-               // 設定時間到 23:59:59 確保涵蓋當天
-               monthEnd.setHours(23, 59, 59, 999);
+               // End of month timestamp (23:59:59 確保涵蓋整天)
+               const monthEnd = new Date(y, m + 1, 0, 23, 59, 59);
                const monthEndTs = monthEnd.getTime();
                
-               const prevMonthEnd = new Date(y, m, 0);
-               prevMonthEnd.setHours(23, 59, 59, 999);
+               // Prev month end timestamp
+               const prevMonthEnd = new Date(y, m, 0, 23, 59, 59);
                const prevMonthEndTs = prevMonthEnd.getTime();
 
+               let realEndTs = monthEndTs;
+               if (m === currentMonth && y === currentYear) {
+                   realEndTs = todayDate.getTime();
+               }
+
                let valEoM = 0;
-               let valPrevEoM = 0;
-               let costMonth = 0;
+               let valStart = 0;
                let dividendMonth = 0;
 
                portfolio.forEach(item => {
-                    // Shares at the end of previous month
-                    const sharesPrev = item.transactions.filter(tx => parseDateSimple(tx.date) <= prevMonthEndTs).reduce((s, tx) => s + tx.shares, 0);
-                    // Shares at the end of current month
-                    const sharesCur = item.transactions.filter(tx => parseDateSimple(tx.date) <= monthEndTs).reduce((s, tx) => s + tx.shares, 0);
-                    
-                    // Transactions cost/revenue within current month
-                    const monthCost = item.transactions
-                        .filter(tx => {
-                             const tTs = parseDateSimple(tx.date);
-                             return tTs > prevMonthEndTs && tTs <= monthEndTs;
-                        })
-                        .reduce((s, tx) => {
-                             let amount = tx.totalAmount || Math.abs(tx.shares * tx.price);
-                             if (tx.shares < 0) amount = -Math.abs(amount);
-                             else amount = Math.abs(amount);
-                             return s + amount;
-                        }, 0);
-
-                    // History price
                     const history = item.etf.priceHistory || [];
                     const sortedHistory = [...history].sort((a,b) => parseDateSimple(a.date) - parseDateSimple(b.date));
                     
-                    const getPriceClosestTo = (ts: number, fallback: number) => {
-                        if (sortedHistory.length === 0) return fallback;
-                        let closestP = fallback;
-                        let minDiff = Infinity;
-                        for (let i = 0; i < sortedHistory.length; i++) {
-                            const dTs = parseDateSimple(sortedHistory[i].date);
-                            const diff = Math.abs(dTs - ts);
-                            if (diff < minDiff) {
-                                minDiff = diff;
-                                closestP = sortedHistory[i].price;
+                    // 根據使用者要求：找每個月最後一個交易日 (扣除六日沒有資料的狀況)
+                    const getPriceBeforeOrOn = (ts: number, fallback: number) => {
+                        let p = fallback;
+                        let maxT = -1;
+                        for (const h of sortedHistory) {
+                            const ht = parseDateSimple(h.date);
+                            if (ht <= ts && ht > maxT) {
+                                maxT = ht;
+                                p = h.price;
                             }
                         }
-                        // 如果最近的日期差超過 20 天，代表可能沒有這月的資料，退回 fallback
-                        if (minDiff > 20 * 24 * 60 * 60 * 1000) return fallback;
-                        return closestP;
+                        return p;
                     };
 
-                    let priceEoM = getPriceClosestTo(monthEndTs, item.etf.priceBase);
-                    let pricePrevEoM = getPriceClosestTo(prevMonthEndTs, item.etf.priceBase);
+                    // 1月1日休市，找最近後續的股價 (如: 01-02)
+                    const getPriceAfterOrOn = (ts: number, fallback: number) => {
+                        let p = fallback;
+                        let minT = Infinity;
+                        for (const h of sortedHistory) {
+                            const ht = parseDateSimple(h.date);
+                            if (ht >= ts && ht < minT) {
+                                minT = ht;
+                                p = h.price;
+                            }
+                        }
+                        if (minT === Infinity) return getPriceBeforeOrOn(ts, fallback);
+                        return p;
+                    };
 
-                    // 如果月結算日 >= 今天，或者處理當月時，EoM 使用最新股價
-                    if (monthEndTs >= todayDate.getTime() || (m === currentMonth && y === currentYear)) {
-                        priceEoM = item.etf.priceCurrent;
+                    // 計算「月底」價值
+                    const sharesEnd = item.transactions.filter(tx => parseDateSimple(tx.date) <= realEndTs).reduce((s, tx) => s + tx.shares, 0);
+                    let priceEnd = getPriceBeforeOrOn(realEndTs, item.etf.priceBase);
+                    if (m === currentMonth && y === currentYear) {
+                         // 機動到現在最新價格
+                         priceEnd = item.etf.priceCurrent;
                     }
-                    if (prevMonthEndTs >= todayDate.getTime()) {
-                        pricePrevEoM = item.etf.priceCurrent;
+                    valEoM += (sharesEnd * priceEnd);
+
+                    // 計算「月初/上月底」價值
+                    if (m === 0 && y === START_YEAR) { 
+                        // 1月: 年初 (01-01 休市則找最近後續交易日 01-02)
+                        const jan1Ts = new Date(y, 0, 1, 0, 0, 0).getTime();
+                        const sharesStart = item.transactions.filter(tx => parseDateSimple(tx.date) <= jan1Ts).reduce((s, tx) => s + tx.shares, 0);
+                        const priceStart = getPriceAfterOrOn(jan1Ts, item.etf.priceBase);
+                        valStart += (sharesStart * priceStart);
+                    } else { 
+                        // 2月以上: 找上個月底的最後一個交易日 (完全銜接至上個月的 End Value)
+                        const sharesStart = item.transactions.filter(tx => parseDateSimple(tx.date) <= prevMonthEndTs).reduce((s, tx) => s + tx.shares, 0);
+                        const priceStart = getPriceBeforeOrOn(prevMonthEndTs, item.etf.priceBase);
+                        valStart += (sharesStart * priceStart);
                     }
 
-                    valEoM += sharesCur * priceEoM;
-                    valPrevEoM += sharesPrev * pricePrevEoM;
-                    costMonth += monthCost;
-
-                    // Dividends ex-date in this month
+                    // 月配股息計算
                     item.etf.dividends.forEach(d => {
                         const dTs = parseDateSimple(d.date);
                         if (dTs > prevMonthEndTs && dTs <= monthEndTs) {
@@ -246,7 +249,8 @@ const DailyAnalysisView: React.FC<Props> = ({ etfs, portfolio }) => {
                     });
                });
                
-               const perfMonth = (valEoM - valPrevEoM) - costMonth;
+               // 用戶指示：月底價值 - 月初價值 (純粹看市值增減，不扣除成本計算以配合自製 Excel 邏輯)
+               const perfMonth = valEoM - valStart; 
                const label = `${y}/${String(m + 1).padStart(2, '0')}`;
                perfMonths.push({
                    label,

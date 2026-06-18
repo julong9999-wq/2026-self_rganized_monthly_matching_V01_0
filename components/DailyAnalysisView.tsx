@@ -194,6 +194,7 @@ const DailyAnalysisView: React.FC<Props> = ({ etfs, portfolio }) => {
 
       // 紀錄每個月的 月底庫存 (做為下個月的上月底庫存)
       const endValuesMap: Record<string, number> = {};
+      const startValuesMap: Record<string, number> = {};
 
       monthsToProcess.forEach(({y, m, label}) => {
            let valStart = 0;
@@ -203,7 +204,7 @@ const DailyAnalysisView: React.FC<Props> = ({ etfs, portfolio }) => {
 
            // 當月時間範圍
            const monthStartTs = new Date(y, m, 1, 0, 0, 0).getTime();
-           const monthEndTs = new Date(y, m + 1, 0, 23, 59, 59).getTime();
+           let monthEndTs = new Date(y, m + 1, 0, 23, 59, 59).getTime();
 
            portfolio.forEach(item => {
                 const history = item.etf.priceHistory || [];
@@ -232,35 +233,46 @@ const DailyAnalysisView: React.FC<Props> = ({ etfs, portfolio }) => {
                     }
                 });
 
-                // 2025/12 月底庫存設定為 2026/01 第一個交易日的價值
+                // 本月底庫存 (月底庫存張數 * 當月最後一個交易日股價)
                 if (y === 2025 && m === 11) {
-                     const firstDayPrices = getPricesInMonth(sortedHistory, 2026, 0);
-                     let firstDayTs = new Date(2026, 0, 1).getTime();
-                     let priceStart = item.etf.priceBase;
-                     if (firstDayPrices.length > 0) {
-                         firstDayTs = parseDateSimple(firstDayPrices[0].date);
-                         priceStart = firstDayPrices[0].price;
-                     }
-                     const sharesStart = item.transactions.filter(tx => parseDateSimple(tx.date) <= firstDayTs).reduce((s, tx) => s + tx.shares, 0);
-                     valEoM += sharesStart * priceStart;
+                    valEoM += 0; // 不在 2025/12 計算實際值，以防影響後續
                 } else {
-                     // 本月底庫存 (月底庫存張數 * 當月最後一個交易日股價)
                      const sharesEoM = item.transactions.filter(tx => parseDateSimple(tx.date) <= monthEndTs).reduce((s, tx) => s + tx.shares, 0);
                      let priceEoM = getLatestPriceInMonth(sortedHistory, y, m, item.etf.priceBase);
                      if (m === currentMonth && y === currentYear) {
                          priceEoM = item.etf.priceCurrent; // 當月用最新價格
                      }
                      valEoM += sharesEoM * priceEoM;
+
+                     // 2026/01 的 月初庫存 特殊處理
+                     if (y === 2026 && m === 0) {
+                         // 若 priceHistory 中有大於等於兩筆資料，才認為有 01/02 及 01/30。否則 priceBase 就是 01/02。
+                         const janPrices = getPricesInMonth(sortedHistory, 2026, 0);
+                         let firstDayTs = new Date(2026, 0, 2).getTime(); 
+                         let priceStart = item.etf.priceBase;
+                         if (janPrices.length > 1) {
+                             firstDayTs = parseDateSimple(janPrices[0].date);
+                             priceStart = janPrices[0].price;
+                         }
+                         const sharesStart = item.transactions.filter(tx => parseDateSimple(tx.date) <= firstDayTs).reduce((s, tx) => s + tx.shares, 0);
+                         valStart += sharesStart * priceStart;
+                     }
                 }
            });
 
            endValuesMap[label] = valEoM;
+           if (y === 2026 && m === 0) {
+               startValuesMap[label] = valStart;
+           }
 
            let perfMonth = 0;
            if (y === 2025 && m === 11) {
                perfMonth = 0; // 2025/12 績效為 0
+           } else if (y === 2026 && m === 0) {
+               // 2026/01 績效 = 月底庫存 - 月初庫存 - 本月購賣
+               perfMonth = valEoM - startValuesMap[label] - purchaseMonth;
            } else {
-               // 2026/01 以後 績效 = 月底庫存 - 上月底庫存 - 本月購賣
+               // 2026/02 以後 績效 = 月底庫存 - 上月底庫存 - 本月購賣
                let prevM = m - 1;
                let prevY = y;
                if (prevM < 0) { prevM = 11; prevY--; }
@@ -604,6 +616,9 @@ const DailyAnalysisView: React.FC<Props> = ({ etfs, portfolio }) => {
                {expandedAnalysis.includes('H') && (
                   <div className="px-2 pb-3 border-t border-slate-100 pt-2 animate-[fadeIn_0.2s_ease-out] flex flex-col gap-4">
                       {/* 圖表 */}
+                      <pre className="text-xs bg-slate-100 p-2 overflow-auto" style={{maxHeight:'200px'}}>
+                         {JSON.stringify(portfolio.map(p => ({id: p.id, history: p.etf.priceHistory})), null, 2)}
+                      </pre>
                       {analysisData.perfMonths.length > 0 ? (
                           <div className="w-full h-[300px]">
                               <ResponsiveContainer width="100%" height="100%">

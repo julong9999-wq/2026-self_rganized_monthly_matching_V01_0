@@ -193,7 +193,12 @@ const DailyAnalysisView: React.FC<Props> = ({ etfs, portfolio }) => {
                              const tTs = parseDateSimple(tx.date);
                              return tTs > prevMonthEndTs && tTs <= monthEndTs;
                         })
-                        .reduce((s, tx) => s + (tx.totalAmount || (tx.shares * tx.price)), 0);
+                        .reduce((s, tx) => {
+                             let amount = tx.totalAmount || Math.abs(tx.shares * tx.price);
+                             if (tx.shares < 0) amount = -Math.abs(amount);
+                             else amount = Math.abs(amount);
+                             return s + amount;
+                        }, 0);
 
                     // History price
                     const history = item.etf.priceHistory || [];
@@ -208,14 +213,19 @@ const DailyAnalysisView: React.FC<Props> = ({ etfs, portfolio }) => {
                                  break;
                             }
                         }
-                        if (ts >= todayDate.getTime() || (m === currentMonth && y === currentYear)) {
-                             p = item.etf.priceCurrent; // current month should use current price
-                        }
                         return p;
                     };
 
-                    const priceEoM = getPriceAtOrBefore(monthEndTs, item.etf.priceBase);
-                    const pricePrevEoM = getPriceAtOrBefore(prevMonthEndTs, item.etf.priceBase);
+                    let priceEoM = getPriceAtOrBefore(monthEndTs, item.etf.priceBase);
+                    let pricePrevEoM = getPriceAtOrBefore(prevMonthEndTs, item.etf.priceBase);
+
+                    // 如果月結算日 >= 今天，或者處理當月時，EoM 使用最新股價
+                    if (monthEndTs >= todayDate.getTime() || (m === currentMonth && y === currentYear)) {
+                        priceEoM = item.etf.priceCurrent;
+                    }
+                    if (prevMonthEndTs >= todayDate.getTime()) {
+                        pricePrevEoM = item.etf.priceCurrent;
+                    }
 
                     valEoM += sharesCur * priceEoM;
                     valPrevEoM += sharesPrev * pricePrevEoM;
@@ -590,7 +600,7 @@ const DailyAnalysisView: React.FC<Props> = ({ etfs, portfolio }) => {
                                       <Tooltip
                                         cursor={{ fill: 'rgba(241, 245, 249, 0.5)' }}
                                         contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', fontSize: '12px' }}
-                                        formatter={(value: number) => ['$' + formatMoney(value), '']}
+                                        formatter={(value: number, name: string) => ['$' + formatMoney(value), name]}
                                         labelStyle={{ fontWeight: 'bold', color: '#1E293B', marginBottom: '4px' }}
                                       />
                                       <Legend iconType="circle" wrapperStyle={{ fontSize: '12px', color: '#64748B' }} />
@@ -622,6 +632,14 @@ const DailyAnalysisView: React.FC<Props> = ({ etfs, portfolio }) => {
                                       <span className="flex-1 text-right font-bold text-slate-800">{formatMoney(row.total)}</span>
                                   </div>
                               ))}
+                              <div className="flex justify-between px-2 py-2 border-t-2 border-slate-300 bg-amber-50 font-bold text-slate-800">
+                                  <span className="flex-1">合計</span>
+                                  <span className={`flex-1 text-right ${analysisData.perfMonths.reduce((sum, r) => sum + r.perf, 0) > 0 ? 'text-red-600' : analysisData.perfMonths.reduce((sum, r) => sum + r.perf, 0) < 0 ? 'text-green-600' : 'text-slate-600'}`}>
+                                      {analysisData.perfMonths.reduce((sum, r) => sum + r.perf, 0) > 0 ? '+' : ''}{formatMoney(analysisData.perfMonths.reduce((sum, r) => sum + r.perf, 0))}
+                                  </span>
+                                  <span className="flex-1 text-right text-slate-700">{formatMoney(analysisData.perfMonths.reduce((sum, r) => sum + r.yield, 0))}</span>
+                                  <span className="flex-1 text-right text-amber-900">{formatMoney(analysisData.perfMonths.reduce((sum, r) => sum + r.total, 0))}</span>
+                              </div>
                           </div>
                       )}
                   </div>

@@ -204,20 +204,25 @@ const DailyAnalysisView: React.FC<Props> = ({ etfs, portfolio }) => {
                     const history = item.etf.priceHistory || [];
                     const sortedHistory = [...history].sort((a,b) => parseDateSimple(a.date) - parseDateSimple(b.date));
                     
-                    const getPriceAtOrBefore = (ts: number, fallback: number) => {
-                        let p = fallback;
+                    const getPriceClosestTo = (ts: number, fallback: number) => {
+                        if (sortedHistory.length === 0) return fallback;
+                        let closestP = fallback;
+                        let minDiff = Infinity;
                         for (let i = 0; i < sortedHistory.length; i++) {
-                            if (parseDateSimple(sortedHistory[i].date) <= ts) {
-                                 p = sortedHistory[i].price;
-                            } else {
-                                 break;
+                            const dTs = parseDateSimple(sortedHistory[i].date);
+                            const diff = Math.abs(dTs - ts);
+                            if (diff < minDiff) {
+                                minDiff = diff;
+                                closestP = sortedHistory[i].price;
                             }
                         }
-                        return p;
+                        // 如果最近的日期差超過 20 天，代表可能沒有這月的資料，退回 fallback
+                        if (minDiff > 20 * 24 * 60 * 60 * 1000) return fallback;
+                        return closestP;
                     };
 
-                    let priceEoM = getPriceAtOrBefore(monthEndTs, item.etf.priceBase);
-                    let pricePrevEoM = getPriceAtOrBefore(prevMonthEndTs, item.etf.priceBase);
+                    let priceEoM = getPriceClosestTo(monthEndTs, item.etf.priceBase);
+                    let pricePrevEoM = getPriceClosestTo(prevMonthEndTs, item.etf.priceBase);
 
                     // 如果月結算日 >= 今天，或者處理當月時，EoM 使用最新股價
                     if (monthEndTs >= todayDate.getTime() || (m === currentMonth && y === currentYear)) {

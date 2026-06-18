@@ -166,7 +166,7 @@ const DailyAnalysisView: React.FC<Props> = ({ etfs, portfolio }) => {
           const mEnd = (y === currentYear) ? currentMonth : 11;
           
           for (let m = mStart; m <= mEnd; m++) {
-               // End of month timestamp (23:59:59 確保涵蓋整天)
+               // End of month timestamp
                const monthEnd = new Date(y, m + 1, 0, 23, 59, 59);
                const monthEndTs = monthEnd.getTime();
                
@@ -187,7 +187,6 @@ const DailyAnalysisView: React.FC<Props> = ({ etfs, portfolio }) => {
                     const history = item.etf.priceHistory || [];
                     const sortedHistory = [...history].sort((a,b) => parseDateSimple(a.date) - parseDateSimple(b.date));
                     
-                    // 根據使用者要求：找每個月最後一個交易日 (扣除六日沒有資料的狀況)
                     const getPriceBeforeOrOn = (ts: number, fallback: number) => {
                         let p = fallback;
                         let maxT = -1;
@@ -201,7 +200,6 @@ const DailyAnalysisView: React.FC<Props> = ({ etfs, portfolio }) => {
                         return p;
                     };
 
-                    // 1月1日休市，找最近後續的股價 (如: 01-02)
                     const getPriceAfterOrOn = (ts: number, fallback: number) => {
                         let p = fallback;
                         let minT = Infinity;
@@ -216,40 +214,39 @@ const DailyAnalysisView: React.FC<Props> = ({ etfs, portfolio }) => {
                         return p;
                     };
 
-                    // 計算「月底」價值
-                    const sharesEnd = item.transactions.filter(tx => parseDateSimple(tx.date) <= realEndTs).reduce((s, tx) => s + tx.shares, 0);
+                    // 使用使用者「目前所有庫存張數」
+                    const totalShares = item.transactions.reduce((s, tx) => s + tx.shares, 0);
+
+                    // 取得「月底」股價
                     let priceEnd = getPriceBeforeOrOn(realEndTs, item.etf.priceBase);
                     if (m === currentMonth && y === currentYear) {
                          // 機動到現在最新價格
                          priceEnd = item.etf.priceCurrent;
                     }
-                    valEoM += (sharesEnd * priceEnd);
+                    valEoM += (totalShares * priceEnd);
 
-                    // 計算「月初/上月底」價值
+                    // 取得「月初/上月底」股價
                     if (m === 0 && y === START_YEAR) { 
                         // 1月: 年初 (01-01 休市則找最近後續交易日 01-02)
                         const jan1Ts = new Date(y, 0, 1, 0, 0, 0).getTime();
-                        const sharesStart = item.transactions.filter(tx => parseDateSimple(tx.date) <= jan1Ts).reduce((s, tx) => s + tx.shares, 0);
                         const priceStart = getPriceAfterOrOn(jan1Ts, item.etf.priceBase);
-                        valStart += (sharesStart * priceStart);
+                        valStart += (totalShares * priceStart);
                     } else { 
-                        // 2月以上: 找上個月底的最後一個交易日 (完全銜接至上個月的 End Value)
-                        const sharesStart = item.transactions.filter(tx => parseDateSimple(tx.date) <= prevMonthEndTs).reduce((s, tx) => s + tx.shares, 0);
+                        // 2月以上: 找上個月底的最後一個交易日
                         const priceStart = getPriceBeforeOrOn(prevMonthEndTs, item.etf.priceBase);
-                        valStart += (sharesStart * priceStart);
+                        valStart += (totalShares * priceStart);
                     }
 
                     // 月配股息計算
                     item.etf.dividends.forEach(d => {
                         const dTs = parseDateSimple(d.date);
                         if (dTs > prevMonthEndTs && dTs <= monthEndTs) {
-                            const sharesAtExDiv = item.transactions.filter(tx => parseDateSimple(tx.date) <= dTs).reduce((s, tx) => s + tx.shares, 0);
-                            dividendMonth += sharesAtExDiv * d.amount;
+                            // 統一使用總張數計算股息，以對齊使用者單一庫存量假設
+                            dividendMonth += totalShares * d.amount;
                         }
                     });
                });
                
-               // 用戶指示：月底價值 - 月初價值 (純粹看市值增減，不扣除成本計算以配合自製 Excel 邏輯)
                const perfMonth = valEoM - valStart; 
                const label = `${y}/${String(m + 1).padStart(2, '0')}`;
                perfMonths.push({

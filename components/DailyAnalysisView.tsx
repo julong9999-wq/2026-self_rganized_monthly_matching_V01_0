@@ -1,8 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { EtfData, CategoryKey, PortfolioItem } from '../types';
-import { Megaphone, Calendar, DollarSign, Percent, Info, CalendarCheck, TrendingUp, Minus, Plus, BarChart2 } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { Megaphone, Calendar, DollarSign, Percent, Info, CalendarCheck, TrendingUp, Minus, Plus } from 'lucide-react';
 
 interface Props {
   etfs: EtfData[];
@@ -70,13 +69,6 @@ const DailyAnalysisView: React.FC<Props> = ({ etfs, portfolio }) => {
                const y = parseInt(cleanStr.substring(0, 4));
                const m = parseInt(cleanStr.substring(4, 6)) - 1;
                const d = parseInt(cleanStr.substring(6, 8));
-               return new Date(y, m, d).getTime();
-          }
-          const parts = cleanStr.split(/[\/\-]/);
-          if (parts.length === 2 && !isNaN(parseInt(parts[0])) && !isNaN(parseInt(parts[1]))) {
-               const y = currentYear;
-               const m = parseInt(parts[0]) - 1;
-               const d = parseInt(parts[1]);
                return new Date(y, m, d).getTime();
           }
           const standardDate = new Date(cleanStr.replace(/\./g, '/').replace(/-/g, '/'));
@@ -165,133 +157,6 @@ const DailyAnalysisView: React.FC<Props> = ({ etfs, portfolio }) => {
       currentMonthDividendsList.sort((a,b) => parseDateSimple(a.date) - parseDateSimple(b.date));
       dailyPerformanceList.sort((a, b) => b.changeValue - a.changeValue);
 
-      // --- 新增：年度績效分析 (依照使用者要求公式) ---
-      const perfMonths: { label: string; perf: number; yield: number; total: number; y: number; m: number }[] = [];
-      
-      const monthsToProcess: {y: number, m: number, label: string}[] = [];
-      const START_YEAR = 2026;
-      for (let y = START_YEAR; y <= currentYear; y++) {
-          const mEnd = (y === currentYear) ? currentMonth : 11;
-          for (let m = 0; m <= mEnd; m++) {
-               monthsToProcess.push({ y, m, label: `${y}/${String(m + 1).padStart(2, '0')}` });
-          }
-      }
-
-      const getPricesInMonth = (history: any[], year: number, month: number) => {
-          return history.filter(h => {
-              const d = new Date(parseDateSimple(h.date));
-              return d.getFullYear() === year && d.getMonth() === month;
-          });
-      };
-
-      const getLatestPriceInMonth = (history: any[], year: number, month: number, fallback: number) => {
-          const inMonth = getPricesInMonth(history, year, month);
-          if (inMonth.length > 0) return inMonth[inMonth.length - 1].price;
-          return fallback;
-      };
-
-      // 紀錄每個月的 月底庫存 (做為下個月的上月底庫存)
-      const endValuesMap: Record<string, number> = {};
-
-      monthsToProcess.forEach(({y, m, label}) => {
-           let valStart = 0;
-           let valEoM = 0;
-           let purchaseMonth = 0;
-           let dividendMonth = 0;
-
-           // 當月時間範圍
-           const monthStartTs = new Date(y, m, 1, 0, 0, 0).getTime();
-           let monthEndTs = new Date(y, m + 1, 0, 23, 59, 59).getTime();
-
-           portfolio.forEach(item => {
-                const history = item.etf.priceHistory || [];
-                const sortedHistory = [...history].sort((a,b) => parseDateSimple(a.date) - parseDateSimple(b.date));
-                
-                // 本月淨買進金額
-                let itemPurchase = 0;
-                item.transactions.forEach(tx => {
-                    const txTs = parseDateSimple(tx.date);
-                    if (txTs >= monthStartTs && txTs <= monthEndTs) {
-                         itemPurchase += tx.totalAmount;
-                    }
-                });
-                purchaseMonth += itemPurchase;
-
-                // 本月股息
-                item.etf.dividends.forEach(d => {
-                    const dTs = parseDateSimple(d.date);
-                    if (dTs >= monthStartTs && dTs <= monthEndTs) {
-                        const sharesAtExDiv = item.transactions.filter(tx => parseDateSimple(tx.date) <= dTs).reduce((s, tx) => s + tx.shares, 0);
-                        dividendMonth += sharesAtExDiv * d.amount;
-                    }
-                });
-
-                // 本月底庫存 (月底庫存張數 * 當月最後一個交易日股價)
-                // 從 sortedHistory 找 2026-01-30 左右的股價。這裡用 getLatestPriceInMonth，它會抓該月最後一筆資料。
-                const sharesEoM = item.transactions.filter(tx => parseDateSimple(tx.date) <= monthEndTs).reduce((s, tx) => s + tx.shares, 0);
-                let priceEoM = getLatestPriceInMonth(sortedHistory, y, m, item.etf.priceBase);
-                if (m === currentMonth && y === currentYear) {
-                    priceEoM = item.etf.priceCurrent; // 當月用最新價格
-                }
-                valEoM += sharesEoM * priceEoM;
-
-                // 若為 2026/01，月初庫存 特殊處理
-                if (y === 2026 && m === 0) {
-                    const janPrices = getPricesInMonth(sortedHistory, 2026, 0);
-                    // 根據使用者說明： 月初庫存=2026-01-02 庫存張數*當日股價
-                    let firstDayTs = parseDateSimple("2026-01-02"); 
-                    let priceStart = item.etf.priceBase;
-                    
-                    // 嘗試從歷史紀錄找到第一筆作為初日資料
-                    if (janPrices.length > 0) {
-                        if (janPrices.length > 1) {
-                            priceStart = janPrices[0].price;
-                            firstDayTs = parseDateSimple(janPrices[0].date);
-                        } else {
-                            // 如果一月只有一筆資料 (可能是 1/30)，月初價格就不要等於月底價格，可以往前找或者依賴 priceBase (發行價) 
-                            // 這裡直接嘗試取前一筆，或是就用發行價
-                            priceStart = item.etf.priceBase;
-                            firstDayTs = parseDateSimple("2026-01-02");
-                        }
-                    }
-
-                    // 強制檢查是否有指定日期的資料 "2026-01-02"
-                    const preciseDay = sortedHistory.find(h => parseDateSimple(h.date) === parseDateSimple("2026-01-02"));
-                    if (preciseDay) {
-                        priceStart = preciseDay.price;
-                        firstDayTs = parseDateSimple("2026-01-02");
-                    }
-
-                    const sharesStart = item.transactions.filter(tx => parseDateSimple(tx.date) <= firstDayTs).reduce((s, tx) => s + tx.shares, 0);
-                    valStart += sharesStart * priceStart;
-                }
-           });
-
-           endValuesMap[label] = valEoM;
-
-           let perfMonth = 0;
-           if (y === 2026 && m === 0) {
-               // 2026/01 績效 = 月底庫存 - 月初庫存(由年初資料代替) - 本月購賣
-               perfMonth = valEoM - valStart - purchaseMonth;
-           } else {
-               // 2026/02 以後 績效 = 本月月底庫存 - 上個月底庫存 - 本月購賣
-               let prevM = m - 1;
-               let prevY = y;
-               if (prevM < 0) { prevM = 11; prevY--; }
-               const prevLabel = `${prevY}/${String(prevM + 1).padStart(2, '0')}`;
-               const prevValEoM = endValuesMap[prevLabel] || 0;
-               perfMonth = valEoM - prevValEoM - purchaseMonth;
-           }
-
-           perfMonths.push({
-               label,
-               perf: Math.round(perfMonth),
-               yield: Math.round(dividendMonth),
-               total: Math.round(perfMonth + dividendMonth),
-               y, m
-           });
-      });
-
       return {
           currentMonthDividendsList,
           dailyPerformanceList,
@@ -299,7 +164,6 @@ const DailyAnalysisView: React.FC<Props> = ({ etfs, portfolio }) => {
           totalDailyChangeValue,
           totalTodayDividendIncome,
           todayDividendsList,
-          perfMonths,
       };
   }, [portfolio]);
 
@@ -365,11 +229,11 @@ const DailyAnalysisView: React.FC<Props> = ({ etfs, portfolio }) => {
   return (
     <div className="flex flex-col h-full bg-slate-50">
       
-      <div className="flex-1 overflow-y-auto px-2 py-2 space-y-2 scrollbar-hide">
+      <div className="flex-1 overflow-y-auto p-3 space-y-3 scrollbar-hide">
           
           {/* E. 本月除息試算 */}
           <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-               <div onClick={() => toggleAnalysis('E')} className="px-3 py-2.5 flex items-center justify-between cursor-pointer bg-white hover:bg-slate-50">
+               <div onClick={() => toggleAnalysis('E')} className="p-3 flex items-center justify-between cursor-pointer bg-white hover:bg-slate-50">
                    <div className="flex items-center gap-2 flex-1 justify-between pr-2">
                        <div className="flex items-center gap-2">
                            <div className="p-1 bg-violet-100 rounded"><CalendarCheck className="w-4 h-4 text-violet-600" /></div>
@@ -382,7 +246,7 @@ const DailyAnalysisView: React.FC<Props> = ({ etfs, portfolio }) => {
                    {expandedAnalysis.includes('E') ? <Minus className="w-4 h-4 text-slate-400"/> : <Plus className="w-4 h-4 text-slate-400"/>}
                </div>
                {expandedAnalysis.includes('E') && (
-                  <div className="px-2 pb-2 border-t border-slate-100 pt-2 space-y-2 animate-[fadeIn_0.2s_ease-out]">
+                  <div className="px-3 pb-3 border-t border-slate-100 pt-2 space-y-2 animate-[fadeIn_0.2s_ease-out]">
                       <div className="text-center text-[12px] text-slate-400 mb-1">
                           {new Date().getFullYear()}年 {new Date().getMonth() + 1}月 除息清單
                       </div>
@@ -418,7 +282,7 @@ const DailyAnalysisView: React.FC<Props> = ({ etfs, portfolio }) => {
 
           {/* F. 本日績效分析 */}
           <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-               <div onClick={() => toggleAnalysis('F')} className="px-3 py-2.5 flex items-center justify-between cursor-pointer bg-white hover:bg-slate-50">
+               <div onClick={() => toggleAnalysis('F')} className="p-3 flex items-center justify-between cursor-pointer bg-white hover:bg-slate-50">
                    <div className="flex items-center gap-2 flex-1 justify-between pr-2">
                        <div className="flex items-center gap-2">
                            <div className="p-1 bg-rose-100 rounded"><TrendingUp className="w-4 h-4 text-rose-600" /></div>
@@ -431,7 +295,7 @@ const DailyAnalysisView: React.FC<Props> = ({ etfs, portfolio }) => {
                    {expandedAnalysis.includes('F') ? <Minus className="w-4 h-4 text-slate-400"/> : <Plus className="w-4 h-4 text-slate-400"/>}
                </div>
                {expandedAnalysis.includes('F') && (
-                  <div className="px-2 pb-2 border-t border-slate-100 pt-2 space-y-2 animate-[fadeIn_0.2s_ease-out]">
+                  <div className="px-3 pb-3 border-t border-slate-100 pt-2 space-y-2 animate-[fadeIn_0.2s_ease-out]">
                       {analysisData.todayDividendsList.length > 0 && (
                           <div className="bg-[#fffdf0] px-3 py-2 rounded-lg border border-yellow-200 flex flex-col mb-3">
                               <div className="flex justify-between items-center text-yellow-800 border-b border-yellow-200/50 pb-1 mb-1">
@@ -495,7 +359,7 @@ const DailyAnalysisView: React.FC<Props> = ({ etfs, portfolio }) => {
 
           {/* G. 本月配息公告 */}
           <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-               <div onClick={() => toggleAnalysis('G')} className="px-3 py-2.5 flex items-center justify-between cursor-pointer bg-white hover:bg-slate-50">
+               <div onClick={() => toggleAnalysis('G')} className="p-3 flex items-center justify-between cursor-pointer bg-white hover:bg-slate-50">
                    <div className="flex items-center gap-2 flex-1 justify-between pr-2">
                        <div className="flex items-center gap-2">
                            <div className="p-1 bg-red-100 rounded"><Megaphone className="w-4 h-4 text-red-500" /></div>
@@ -506,7 +370,7 @@ const DailyAnalysisView: React.FC<Props> = ({ etfs, portfolio }) => {
                </div>
                
                {expandedAnalysis.includes('G') && (
-                  <div className="px-2 pb-2 border-t border-slate-100 pt-2 animate-[fadeIn_0.2s_ease-out]">
+                  <div className="px-3 pb-3 border-t border-slate-100 pt-2 animate-[fadeIn_0.2s_ease-out]">
                       <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-3">
                           <button
                               onClick={() => setFilter('quarterly')}
@@ -596,87 +460,6 @@ const DailyAnalysisView: React.FC<Props> = ({ etfs, portfolio }) => {
                                 <Calendar className="w-8 h-8 text-slate-300" />
                               </div>
                               <p className="text-sm">目前此分類無即將配息資料</p>
-                          </div>
-                      )}
-                  </div>
-               )}
-
-          </div>
-
-          {/* H. 年度績效分析 */}
-          <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-               <div onClick={() => toggleAnalysis('H')} className="px-3 py-2.5 flex items-center justify-between cursor-pointer bg-white hover:bg-slate-50">
-                   <div className="flex items-center gap-2 flex-1 justify-between pr-2">
-                       <div className="flex items-center gap-2">
-                           <div className="p-1 bg-amber-100 rounded"><BarChart2 className="w-4 h-4 text-amber-600" /></div>
-                           <h4 className="font-bold text-[18px] text-slate-800">H. 年度績效分析</h4>
-                       </div>
-                   </div>
-                   {expandedAnalysis.includes('H') ? <Minus className="w-4 h-4 text-slate-400"/> : <Plus className="w-4 h-4 text-slate-400"/>}
-               </div>
-
-               {expandedAnalysis.includes('H') && (
-                  <div className="px-2 pb-3 border-t border-slate-100 pt-2 animate-[fadeIn_0.2s_ease-out] flex flex-col gap-4">
-                      {/* 圖表 */}
-                      <pre className="text-xs bg-slate-100 p-2 overflow-auto" style={{maxHeight:'200px'}}>
-                         {JSON.stringify(portfolio.map(p => ({id: p.id, history: p.etf.priceHistory})), null, 2)}
-                      </pre>
-                      {analysisData.perfMonths.length > 0 ? (
-                          <div className="w-full h-[300px]">
-                              <ResponsiveContainer width="100%" height="100%">
-                                  <BarChart layout="vertical" data={analysisData.perfMonths} margin={{ top: 10, right: 20, left: 20, bottom: 0 }}>
-                                      <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E2E8F0" />
-                                      <XAxis 
-                                        type="number"
-                                        axisLine={false} 
-                                        tickLine={false} 
-                                        tick={{ fontSize: 10, fill: '#64748B' }} 
-                                        tickFormatter={(val) => Math.round(val/1000) + 'k'}
-                                      />
-                                      <YAxis 
-                                        dataKey="label"
-                                        type="category"
-                                        axisLine={false} 
-                                        tickLine={false} 
-                                        tick={{ fontSize: 10, fill: '#64748B' }} 
-                                      />
-                                      <Legend iconType="circle" wrapperStyle={{ fontSize: '12px', color: '#64748B' }} />
-                                      <Bar dataKey="perf" name="績效" stackId="a" fill="#ef4444" radius={[0, 0, 0, 0]} />
-                                      <Bar dataKey="yield" name="股息" stackId="a" fill="#22c55e" radius={[0, 4, 4, 0]} />
-                                  </BarChart>
-                              </ResponsiveContainer>
-                          </div>
-                      ) : (
-                          <div className="text-center text-slate-400 text-sm py-6">尚無資料</div>
-                      )}
-
-                      {/* 表格 */}
-                      {analysisData.perfMonths.length > 0 && (
-                          <div className="bg-slate-50 rounded-lg border border-slate-200 overflow-hidden text-[12px] flex flex-col">
-                              <div className="flex justify-between bg-slate-200 text-slate-600 font-bold px-2 py-1.5 border-b border-slate-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]">
-                                  <span className="flex-1">年月</span>
-                                  <span className="flex-1 text-right">績效</span>
-                                  <span className="flex-1 text-right">股息</span>
-                                  <span className="flex-1 text-right text-slate-800">小計</span>
-                              </div>
-                              {analysisData.perfMonths.map((row, idx) => (
-                                  <div key={idx} className="flex justify-between px-2 py-1.5 border-b border-slate-200/60 last:border-0 hover:bg-white transition-colors">
-                                      <span className="flex-1 text-slate-500 font-medium">{row.label}</span>
-                                      <span className={`flex-1 text-right ${row.perf > 0 ? 'text-red-600' : row.perf < 0 ? 'text-green-600' : 'text-slate-600'}`}>
-                                          {row.perf > 0 ? '+' : ''}{formatMoney(row.perf)}
-                                      </span>
-                                      <span className="flex-1 text-right text-slate-600">{formatMoney(row.yield)}</span>
-                                      <span className="flex-1 text-right font-bold text-slate-800">{formatMoney(row.total)}</span>
-                                  </div>
-                              ))}
-                              <div className="flex justify-between px-2 py-2 border-t-2 border-slate-300 bg-amber-50 font-bold text-slate-800">
-                                  <span className="flex-1">合計</span>
-                                  <span className={`flex-1 text-right ${analysisData.perfMonths.reduce((sum, r) => sum + r.perf, 0) > 0 ? 'text-red-600' : analysisData.perfMonths.reduce((sum, r) => sum + r.perf, 0) < 0 ? 'text-green-600' : 'text-slate-600'}`}>
-                                      {analysisData.perfMonths.reduce((sum, r) => sum + r.perf, 0) > 0 ? '+' : ''}{formatMoney(analysisData.perfMonths.reduce((sum, r) => sum + r.perf, 0))}
-                                  </span>
-                                  <span className="flex-1 text-right text-slate-700">{formatMoney(analysisData.perfMonths.reduce((sum, r) => sum + r.yield, 0))}</span>
-                                  <span className="flex-1 text-right text-amber-900">{formatMoney(analysisData.perfMonths.reduce((sum, r) => sum + r.total, 0))}</span>
-                              </div>
                           </div>
                       )}
                   </div>

@@ -508,8 +508,8 @@ const AnalysisView: React.FC<Props> = ({ etfs, lastUpdated, filterMode }) => {
       {/* A1 + A2 Fixed Header */}
       <div className="shrink-0 z-10 bg-slate-50 shadow-sm border-b border-slate-200">
          {/* A1: Base Date & Data Date */}
-         <div className="h-16 bg-white px-3 flex items-center overflow-x-auto scrollbar-hide">
-             <div className="flex items-center gap-4 min-w-max">
+         <div className="h-16 bg-white px-4 flex justify-between items-center">
+             <div className="flex items-center gap-5">
                  <div className="flex items-baseline gap-2 flex-shrink-0">
                     <span className="text-[13px] text-slate-400 font-bold">基準</span>
                     <span className="text-[14px] text-slate-600 font-bold">{getDynamicBaseDateStr()}</span>
@@ -518,13 +518,15 @@ const AnalysisView: React.FC<Props> = ({ etfs, lastUpdated, filterMode }) => {
                     <span className="text-[13px] text-slate-400 font-bold">最新</span>
                     <span className="text-[14px] text-blue-900 font-bold">{displayDate}</span>
                  </div>
-                 <button 
+             </div>
+             <div>
+                <button 
                   onClick={() => setShowAnnouncements(true)}
-                  className="ml-2 bg-red-50 text-red-600 border border-red-200 px-3 py-1.5 rounded-lg text-sm font-bold shadow-sm hover:bg-red-100 transition-colors flex items-center gap-1.5 flex-shrink-0"
-                 >
+                  className="bg-red-50 text-red-600 border border-red-200 px-3 py-1.5 rounded-lg text-sm font-bold shadow-sm hover:bg-red-100 transition-colors flex items-center gap-1.5 flex-shrink-0"
+                >
                     <Megaphone className="w-4 h-4" />
                     配息公告
-                 </button>
+                </button>
              </div>
          </div>
 

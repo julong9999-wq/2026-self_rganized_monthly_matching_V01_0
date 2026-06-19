@@ -6,7 +6,10 @@ import { EtfData, CategoryKey, Dividend, MarketIndex, StockDailyPrice } from '..
  * Example: if today is 2026/04/24, returns "2025/04/01"
  */
 export const getDynamicBaseDateStr = (): string => {
-    return '2025/01/02';
+    const today = new Date();
+    const prevYear = today.getFullYear() - 1;
+    const month = (today.getMonth() + 1).toString().padStart(2, '0');
+    return `${prevYear}/${month}/01`;
 };
 
 /**
@@ -213,240 +216,232 @@ export const parseDividendData = (csvContent: string): Record<string, Dividend[]
 /**
  * Parses the CSV content strictly with robust header detection.
  */
-export const parseEtfData = (
-    txtBase: string,
-    txtLatestPrice: string,
-    txtHistPrice2025: string,
-    txtDailyPrice: string,
-    txtScale: string
-  ): EtfData[] => {
-    const etfMap: Record<string, EtfData> = {};
+export const parseEtfData = (csvContent: string): EtfData[] => {
+  const lines = csvContent.split(/\r?\n/).filter(line => line.trim() !== '');
+  if (lines.length < 2) return [];
+
+  const etfs: EtfData[] = [];
   
-    // 1. 基本資料 (txtBase)
-    const baseLines = txtBase.split(/\r?\n/).filter(line => line.trim() !== '');
-    if (baseLines.length >= 2) {
-      let header = parseCSVRow(baseLines[0]).map(c => c.toLowerCase());
-      const findCol = (keywords: string[]) => header.findIndex(h => keywords.some(k => h.includes(k)));
-      const idxCode = findCol(['etf 代碼', '代號', 'code']);
-      const idxName = findCol(['etf 名稱', '股名', 'name']);
-      const idxMarket = findCol(['上市/ 上櫃', '市場', 'market', '上市', '上櫃']);
+  // --- 1. Robust Header Row Detection ---
+  let headerRowIndex = -1;
+  let header: string[] = [];
+
+  for (let i = 0; i < Math.min(lines.length, 10); i++) {
+     const rowValues = parseCSVRow(lines[i]);
+     const rowLower = rowValues.map(c => c.toLowerCase());
+     
+     if (rowLower.some(c => c.includes('代碼') || c.includes('代號') || c.includes('code') || c.includes('etf 代碼') || c.includes('symbol'))) {
+         headerRowIndex = i;
+         header = rowLower;
+         break;
+     }
+  }
+
+  if (headerRowIndex === -1) {
+     headerRowIndex = 0;
+     header = parseCSVRow(lines[0]).map(c => c.toLowerCase());
+  }
+  
+  const findCol = (keywords: string[]) => header.findIndex(h => keywords.some(k => h.includes(k)));
+
+  const idxCode = findCol(['etf 代碼', '股號', '代碼', '代號', 'code', 'symbol', '股票代號']);
+  const idxName = findCol(['etf 名稱', '股名', '股票名稱', 'etf名稱', '名稱', 'name']); 
+  const idxMarket = findCol(['上市/ 上櫃', '市場', 'market', '類別', '上市', '上櫃', 'type', '掛牌']); 
+  
+  // --- 2. Dynamic Price Column Detection ---
+  // 修改：捕捉所有日期欄位作為歷史數據，並特別處理 "NOW()-1"
+  const dateColIndices = header.map((h, index) => {
+      // Matches YYYY/MM/DD, YYYY-MM-DD, MM/DD, YYYYMM (6 digits), YYYY/MM (for monthly data)
+      const isDate = /(\d{1,4}[-./]\d{1,2}[-./]\d{1,2})|(\d{1,2}[-./]\d{1,2})|(\d{4}[-./]\d{1,2})/.test(h) || /^\d{6}$/.test(h.replace(/\//g,''));
       
-      for (let i = 1; i < baseLines.length; i++) {
-        const row = parseCSVRow(baseLines[i]);
-        if (row.length <= idxCode) continue;
-        const code = row[idxCode]?.replace(/['"]/g, '').trim();
-        if (!code) continue;
+      // 特別偵測 "NOW()-1" 標題
+      const isYesterdayKey = h.includes('now()-1') || h.includes('now() - 1');
+
+      if (isDate || isYesterdayKey) {
+          let label = parseCSVRow(lines[headerRowIndex])[index].trim();
+          
+          // 如果是 "NOW()-1"，將標籤轉換為昨天的實際日期字串，方便後續排序邏輯
+          if (isYesterdayKey && !isDate) {
+               const d = new Date();
+               d.setDate(d.getDate() - 1);
+               const yyyy = d.getFullYear();
+               const mm = (d.getMonth() + 1).toString().padStart(2, '0');
+               const dd = d.getDate().toString().padStart(2, '0');
+               label = `${yyyy}/${mm}/${dd}`;
+          }
+
+          return { index, text: label };
+      }
+      return null;
+  }).filter((item): item is { index: number, text: string } => item !== null);
+
+  let idxPriceCurrent = -1;
+  let currentPriceDateLabel = '';
+
+  // 排序日期欄位 (假設越後面的欄位日期越新)
+  if (dateColIndices.length > 0) {
+      const lastDateCol = dateColIndices[dateColIndices.length - 1];
+      idxPriceCurrent = lastDateCol.index;
+      currentPriceDateLabel = lastDateCol.text;
+  } else {
+      idxPriceCurrent = findCol(['收盤價', '收盤', '現價', '成交', 'price', 'current', '最近', 'close', 'last']);
+      currentPriceDateLabel = '最新股價';
+  }
+
+  const dynamicBaseDate = new Date(getDynamicBaseDateStr());
+  const startStr1 = `${dynamicBaseDate.getMonth() + 1}/${dynamicBaseDate.getDate()}`;
+  const startStr2 = `${(dynamicBaseDate.getMonth() + 1).toString().padStart(2, '0')}/${dynamicBaseDate.getDate().toString().padStart(2, '0')}`;
   
-        let name = row[idxName] || '';
+  // Prioritize finding the exact dynamic base date, then use fallback keywords
+  let idxPriceBase = findCol([startStr1, startStr2, '基準日', '基準日股價']);
+  if (idxPriceBase === -1) {
+      idxPriceBase = findCol(['成本', '1/2', '01/02', '起始', 'base', 'open', 'start']);
+  }
+
+  const idxYield = findCol(['殖利率', 'yield', '配息率']);
+  const idxReturn = findCol(['報酬', '損益', 'return']);
+
+  // --- 3. Parse Data Rows ---
+  for (let i = headerRowIndex + 1; i < lines.length; i++) {
+    const row = parseCSVRow(lines[i]);
+    
+    if (idxCode !== -1 && row.length <= idxCode) continue;
+
+    let code = '';
+    let name = '';
+    
+    if (idxCode !== -1 && row[idxCode]) code = row[idxCode];
+    if (idxName !== -1 && row[idxName]) name = row[idxName];
+
+    if (!code) {
+        if (row[0] && /^[0-9]{4,6}[A-Z]?$/.test(row[0])) code = row[0];
+        else if (row[1] && /^[0-9]{4,6}[A-Z]?$/.test(row[1])) code = row[1];
+    }
+    
+    code = code ? code.replace(/['"]/g, '').trim() : '';
+    
+    if (!code) continue;
+
+    const category = CATEGORY_MAP[code];
+
+    if (category) {
+        if ((!name || name.includes('商品')) && idxCode !== -1 && row.length > idxCode + 1) {
+            name = row[idxCode + 1];
+        }
+
         let marketLabel = '上市';
+        if (category === 'AE' || code.includes('B') || (name && name.includes('債'))) {
+            marketLabel = '上櫃';
+        }
+
         if (idxMarket !== -1 && row[idxMarket]) {
-          const m = row[idxMarket].trim();
-          if (m.includes('上櫃') || m.toLowerCase().includes('otc')) marketLabel = '上櫃';
-        } else if (code.includes('B') || name.includes('債')) {
-          marketLabel = '上櫃';
+            const val = row[idxMarket].trim();
+            if (val.includes('上櫃') || val.toLowerCase().includes('otc')) {
+                marketLabel = '上櫃';
+            } else if (val.includes('上市') || val.toLowerCase().includes('listed')) {
+                marketLabel = '上市';
+            }
         }
-  
-        const category = CATEGORY_MAP[code] || 'AF';
-  
-        etfMap[code] = {
-          code,
-          name,
-          category,
-          marketLabel,
-          priceBase: 0,
-          priceCurrent: 0,
-          dividendYield: 0,
-          estYield: 0,
-          returnRate: 0,
-          totalReturn: 0,
-          dividends: [],
-          priceHistory: []
+
+        const parseNum = (val: string) => {
+            if (!val) return 0;
+            const clean = val.replace(/[%$,]/g, '');
+            const num = parseFloat(clean);
+            return isNaN(num) ? 0 : num;
         };
-      }
-    }
-  
-    const parseNum = (val: string) => {
-      if (!val) return 0;
-      const clean = val.replace(/[%$,]/g, '').trim();
-      const num = parseFloat(clean);
-      return isNaN(num) ? 0 : num;
-    };
-  
-    // 2. 歷史資料 2025 (txtHistPrice2025) - Horizontal
-    const histLines = txtHistPrice2025.split(/\r?\n/).filter(line => line.trim() !== '');
-    if (histLines.length >= 2) {
-      let header = parseCSVRow(histLines[0]).map(c => c.toLowerCase());
-      const findCol = (keywords: string[]) => header.findIndex(h => keywords.some(k => h.includes(k)));
-      const idxCode = findCol(['etf 代碼', '代號', 'code']);
-      
-      const dateColIndices = header.map((h, index) => {
-        const isDate = /(\d{1,4}[-./]\d{1,2}[-./]\d{1,2})|(\d{1,2}[-./]\d{1,2})|(\d{4}[-./]\d{1,2})/.test(h);
-        return isDate ? { index, text: parseCSVRow(histLines[0])[index].trim() } : null;
-      }).filter((item): item is { index: number, text: string } => item !== null);
-  
-      for (let i = 1; i < histLines.length; i++) {
-        const row = parseCSVRow(histLines[i]);
-        if (idxCode === -1 || !row[idxCode]) continue;
-        const code = row[idxCode].replace(/['"]/g, '').trim();
-        if (!etfMap[code]) continue;
-  
+
+        // 收集歷史股價
+        const priceHistory: { date: string; price: number }[] = [];
         dateColIndices.forEach(col => {
-          if (row[col.index]) {
-            const p = parseNum(row[col.index]);
-            if (p > 0) {
-              etfMap[code].priceHistory.push({ date: col.text, price: p });
+            if (row[col.index]) {
+                const p = parseNum(row[col.index]);
+                if (p > 0) {
+                    priceHistory.push({ date: col.text, price: p });
+                }
             }
-          }
         });
-      }
-    }
-  
-    // 3. 每日股價 (txtDailyPrice) - Vertical
-    const dailyLines = txtDailyPrice.split(/\r?\n/).filter(line => line.trim() !== '');
-    if (dailyLines.length >= 2) {
-      // txtDailyPrice has format: 日期, ETF 代碼, ETF 名稱, 昨日收盤價, 開盤, 最高, 最低, 股價
-      let header = parseCSVRow(dailyLines[0]).map(c => c.toLowerCase());
-      const findCol = (keywords: string[]) => header.findIndex(h => keywords.some(k => h.includes(k)));
-      const idxDate = findCol(['日期', 'date']);
-      const idxCode = findCol(['etf 代碼', '代號', 'code']);
-      const idxPrice = findCol(['股價', 'price', '收盤價']);
-  
-      if (idxDate !== -1 && idxCode !== -1 && idxPrice !== -1) {
-        let maxDateVal = 0;
-        let maxDateStr = '';
 
-        for (let i = 1; i < dailyLines.length; i++) {
-          const row = parseCSVRow(dailyLines[i]);
-          if (row.length <= Math.max(idxDate, idxCode, idxPrice)) continue;
-          
-          const date = row[idxDate]?.replace(/['"]/g, '').trim();
-          const code = row[idxCode]?.replace(/['"]/g, '').trim();
-          const price = parseNum(row[idxPrice]);
-          
-          if (code && etfMap[code] && date && price > 0) {
-            etfMap[code].priceHistory.push({ date, price });
-            const dVal = new Date(date.replace(/[-.]/g, '/')).getTime();
-            if (!isNaN(dVal) && dVal > maxDateVal) {
-                maxDateVal = dVal;
-                maxDateStr = date;
-            }
-          }
-        }
+        let priceCurrent = 0;
+        let priceBase = 0;
+        let dividendYield = 0;
+        let returnRate = 0;
 
-        if (maxDateStr) {
-            Object.values(etfMap).forEach(e => {
-                e.dataDate = maxDateStr;
-            });
+        if (idxPriceCurrent !== -1 && row[idxPriceCurrent]) {
+            priceCurrent = parseNum(row[idxPriceCurrent]);
         }
-      }
-    }
-  
-    // 4. 最新股價 (txtLatestPrice) - AP101
-    const latestLines = txtLatestPrice.split(/\r?\n/).filter(line => line.trim() !== '');
-    if (latestLines.length >= 2) {
-      let header = parseCSVRow(latestLines[0]).map(c => c.toLowerCase());
-      const findCol = (keywords: string[]) => header.findIndex(h => keywords.some(k => h.includes(k)));
-      const idxCode = findCol(['etf 代碼', '代號', 'code']);
-      
-      const dateColIndices = header.map((h, index) => {
-        const isDate = /(\d{1,4}[-./]\d{1,2}[-./]\d{1,2})|(\d{1,2}[-./]\d{1,2})|(\d{4}[-./]\d{1,2})/.test(h) || /^\d{6}$/.test(h) || h.includes('now');
-        return isDate ? { index, text: parseCSVRow(latestLines[0])[index].trim() } : null;
-      }).filter((item): item is { index: number, text: string } => item !== null);
-  
-      if (dateColIndices.length > 0) {
-        // take the right-most valid date column as latest price
-        const lastDateCol = dateColIndices[dateColIndices.length - 1];
         
-        for (let i = 1; i < latestLines.length; i++) {
-          const row = parseCSVRow(latestLines[i]);
-          if (idxCode === -1 || !row[idxCode]) continue;
-          const code = row[idxCode].replace(/['"]/g, '').trim();
-          if (!etfMap[code]) continue;
-  
-          if (row[lastDateCol.index]) {
-            const p = parseNum(row[lastDateCol.index]);
-            if (p > 0) {
-              etfMap[code].priceCurrent = p;
+        let matchedPriceFromHistory = 0;
+        if (priceHistory.length > 0) {
+            const baseYear = dynamicBaseDate.getFullYear();
+            const baseMonth = dynamicBaseDate.getMonth(); // 0-11
+            
+            let minTime = Infinity;
+
+            for (const ph of priceHistory) {
+                const cleanStr = ph.date.trim().replace(/[-.]/g, '/');
+                let d = new Date(cleanStr);
+                
+                if (isNaN(d.getTime())) {
+                   const parts = cleanStr.split('/');
+                   if (parts.length === 2) {
+                       d = new Date(baseYear, parseInt(parts[0])-1, parseInt(parts[1]));
+                   }
+                }
+
+                if (!isNaN(d.getTime())) {
+                    if (d.getFullYear() === baseYear && d.getMonth() === baseMonth) {
+                        if (d.getTime() < minTime) {
+                            minTime = d.getTime();
+                            matchedPriceFromHistory = ph.price;
+                        }
+                    }
+                }
             }
-          }
         }
-      }
+
+        if (matchedPriceFromHistory > 0) {
+            priceBase = matchedPriceFromHistory;
+        } else if (idxPriceBase !== -1 && row[idxPriceBase]) {
+            priceBase = parseNum(row[idxPriceBase]);
+        } else if (priceHistory.length > 0) {
+            priceBase = priceHistory[0].price;
+        }
+
+        if (idxYield !== -1 && row[idxYield]) {
+            dividendYield = parseNum(row[idxYield]);
+        }
+
+        if (idxReturn !== -1 && row[idxReturn]) {
+            returnRate = parseNum(row[idxReturn]);
+        } else if (priceBase > 0 && priceCurrent > 0) {
+            returnRate = ((priceCurrent - priceBase) / priceBase) * 100;
+        }
+
+        if (priceCurrent === 0 && priceHistory.length > 0) {
+             priceCurrent = priceHistory[priceHistory.length - 1].price;
+        }
+
+        etfs.push({
+            code,
+            name: name || code, 
+            category,
+            marketLabel, 
+            priceBase: Number(priceBase.toFixed(2)),
+            priceCurrent: Number(priceCurrent.toFixed(2)),
+            dataDate: currentPriceDateLabel,
+            dividendYield: Number(dividendYield.toFixed(2)),
+            estYield: 0, 
+            returnRate: Number(returnRate.toFixed(2)),
+            totalReturn: Number(returnRate.toFixed(2)), 
+            dividends: [],
+            priceHistory // 寫入歷史資料
+        });
     }
-  
-    // 5. Compute priceBase etc logic (deduplicate and sort priceHistory)
-    const baseDateStr = getDynamicBaseDateStr();
-    const baseYear = new Date(baseDateStr).getFullYear();
-    const baseMonth = new Date(baseDateStr).getMonth();
-  
-    Object.values(etfMap).forEach(etf => {
-       // Deduplicate and sort history
-       const histMap = new Map<string, number>();
-       etf.priceHistory.forEach(ph => {
-          // Normalize date format (e.g. YYYY/MM/DD)
-          let cleanStr = ph.date.replace(/[-.]/g, '/');
-          let d = new Date(cleanStr);
-          if (isNaN(d.getTime())) {
-              const parts = cleanStr.split('/');
-              if (parts.length === 2 && baseYear) {
-                  d = new Date(baseYear, parseInt(parts[0])-1, parseInt(parts[1]));
-              }
-          }
-          if (!isNaN(d.getTime())) {
-              histMap.set(`${d.getFullYear()}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getDate().toString().padStart(2,'0')}`, ph.price);
-          }
-       });
-       
-       let sortedHist = Array.from(histMap.entries())
-         .map(([date, price]) => ({ date, price }))
-         .sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  }
 
-       // Filter: 2026 年只抓每月的第一個交易日
-       const monthlyMap = new Map<string, any>();
-       sortedHist.forEach(item => {
-           const d = new Date(item.date);
-           if (d.getFullYear() >= 2026) {
-               const key = `${d.getFullYear()}-${d.getMonth()}`;
-               if (!monthlyMap.has(key)) {
-                   monthlyMap.set(key, item);
-               }
-           }
-       });
-       
-       sortedHist = sortedHist.filter(item => {
-           const d = new Date(item.date);
-           if (d.getFullYear() >= 2026) {
-               const key = `${d.getFullYear()}-${d.getMonth()}`;
-               return monthlyMap.get(key) === item;
-           }
-           return true;
-       });
-
-       etf.priceHistory = sortedHist;
-  
-       // Find priceBase for BaseDate (usually start of the year or `getDynamicBaseDateStr()`)
-       // we look for the earliest recorded price in the baseMonth & baseYear
-       if (sortedHist.length > 0) {
-           const candidates = sortedHist.filter(h => {
-              const d = new Date(h.date);
-              return d.getFullYear() === baseYear && d.getMonth() === baseMonth;
-           });
-           if (candidates.length > 0) {
-               etf.priceBase = candidates[0].price; // Earliest in that month
-           } else {
-               // Fallback: the earliest price in history?
-               etf.priceBase = sortedHist[0].price; 
-           }
-       }
-  
-       // If priceCurrent was not found in latestPrice, use the last element of priceHistory
-       if (etf.priceCurrent === 0 && etf.priceHistory.length > 0) {
-           etf.priceCurrent = etf.priceHistory[etf.priceHistory.length - 1].price;
-       }
-    });
-  
-    return Object.values(etfMap);
-  };
-
+  etfs.sort((a, b) => a.code.localeCompare(b.code));
+  return etfs;
+};
 
 const parseNum = (val: string) => {
     if (!val) return 0;

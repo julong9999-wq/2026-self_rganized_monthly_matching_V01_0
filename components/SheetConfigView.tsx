@@ -44,14 +44,14 @@ const SheetConfigView: React.FC<Props> = ({ defaultUrls, onStart, isLoading }) =
   };
 
   const labels = [
-    { title: 'AP214 基本資料', color: 'text-blue-900', icon: <Database className="w-5 h-5 text-blue-900" /> },
-    { title: 'AP215 除息資料', color: 'text-emerald-600', icon: <Database className="w-5 h-5 text-emerald-600" /> },
     { title: 'AP101 最新股價', color: 'text-indigo-600', icon: <Database className="w-5 h-5 text-indigo-600" /> },
-    { title: 'AP217 歷史資料', color: 'text-purple-600', icon: <Database className="w-5 h-5 text-purple-600" /> },
-    { title: 'AP213 每日股價', color: 'text-orange-600', icon: <Database className="w-5 h-5 text-orange-600" /> },
     { title: 'AP211 台股大盤', color: 'text-pink-600', icon: <Database className="w-5 h-5 text-pink-600" /> },
     { title: 'AP212 美股指數', color: 'text-cyan-600', icon: <Database className="w-5 h-5 text-cyan-600" /> },
-    { title: 'AP216 規模大小', color: 'text-teal-600', icon: <Database className="w-5 h-5 text-teal-600" /> }
+    { title: 'AP213 每日股價', color: 'text-orange-600', icon: <Database className="w-5 h-5 text-orange-600" /> },
+    { title: 'AP214 基本資料', color: 'text-blue-900', icon: <Database className="w-5 h-5 text-blue-900" /> },
+    { title: 'AP215 除息資料', color: 'text-emerald-600', icon: <Database className="w-5 h-5 text-emerald-600" /> },
+    { title: 'AP216 規模大小', color: 'text-teal-600', icon: <Database className="w-5 h-5 text-teal-600" /> },
+    { title: 'AP217 歷史資料', color: 'text-purple-600', icon: <Database className="w-5 h-5 text-purple-600" /> }
   ];
 
   return (

@@ -6,10 +6,7 @@ import { EtfData, CategoryKey, Dividend, MarketIndex, StockDailyPrice } from '..
  * Example: if today is 2026/04/24, returns "2025/04/01"
  */
 export const getDynamicBaseDateStr = (): string => {
-    const today = new Date();
-    const prevYear = today.getFullYear() - 1;
-    const month = (today.getMonth() + 1).toString().padStart(2, '0');
-    return `${prevYear}/${month}/01`;
+    return '2025/01/02';
 };
 
 /**
@@ -315,6 +312,9 @@ export const parseEtfData = (
       const idxPrice = findCol(['股價', 'price', '收盤價']);
   
       if (idxDate !== -1 && idxCode !== -1 && idxPrice !== -1) {
+        let maxDateVal = 0;
+        let maxDateStr = '';
+
         for (let i = 1; i < dailyLines.length; i++) {
           const row = parseCSVRow(dailyLines[i]);
           if (row.length <= Math.max(idxDate, idxCode, idxPrice)) continue;
@@ -325,7 +325,18 @@ export const parseEtfData = (
           
           if (code && etfMap[code] && date && price > 0) {
             etfMap[code].priceHistory.push({ date, price });
+            const dVal = new Date(date.replace(/[-.]/g, '/')).getTime();
+            if (!isNaN(dVal) && dVal > maxDateVal) {
+                maxDateVal = dVal;
+                maxDateStr = date;
+            }
           }
+        }
+
+        if (maxDateStr) {
+            Object.values(etfMap).forEach(e => {
+                e.dataDate = maxDateStr;
+            });
         }
       }
     }
@@ -345,6 +356,7 @@ export const parseEtfData = (
       if (dateColIndices.length > 0) {
         // take the right-most valid date column as latest price
         const lastDateCol = dateColIndices[dateColIndices.length - 1];
+        
         for (let i = 1; i < latestLines.length; i++) {
           const row = parseCSVRow(latestLines[i]);
           if (idxCode === -1 || !row[idxCode]) continue;
@@ -384,10 +396,31 @@ export const parseEtfData = (
           }
        });
        
-       const sortedHist = Array.from(histMap.entries())
+       let sortedHist = Array.from(histMap.entries())
          .map(([date, price]) => ({ date, price }))
          .sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  
+
+       // Filter: 2026 年只抓每月的第一個交易日
+       const monthlyMap = new Map<string, any>();
+       sortedHist.forEach(item => {
+           const d = new Date(item.date);
+           if (d.getFullYear() >= 2026) {
+               const key = `${d.getFullYear()}-${d.getMonth()}`;
+               if (!monthlyMap.has(key)) {
+                   monthlyMap.set(key, item);
+               }
+           }
+       });
+       
+       sortedHist = sortedHist.filter(item => {
+           const d = new Date(item.date);
+           if (d.getFullYear() >= 2026) {
+               const key = `${d.getFullYear()}-${d.getMonth()}`;
+               return monthlyMap.get(key) === item;
+           }
+           return true;
+       });
+
        etf.priceHistory = sortedHist;
   
        // Find priceBase for BaseDate (usually start of the year or `getDynamicBaseDateStr()`)

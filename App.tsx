@@ -15,14 +15,14 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 const DEFAULT_URLS = [
-  "https://docs.google.com/spreadsheets/d/e/2PACX-1vTc6ZANKmAJQCXC9k7np_eIhAwC2hF_w9KSpseD0qogcPP0I2rPPhtesNEbHvG48b_tLh9qeu4tr21Q/pub?output=csv", // 0: AP214 Base
-  "https://docs.google.com/spreadsheets/d/e/2PACX-1vR5JvOGT3eB4xq9phw2dXHApJKOgQkUZcs69CsJfL0Iw3s6egADwA8HdbimrWUceQZl_73pnsSLVnQw/pub?output=csv", // 1: AP215 Dividend
-  "https://docs.google.com/spreadsheets/d/e/2PACX-1vT1Vpn2SSkcf7QLqoMoAsdyusxtydfgIQD8pyoV6XojGFnf0zGu_WWuRnI4N3U-Hu0iGRzTrR7N-OD9/pub?output=csv", // 2: AP101 Price
-  "https://docs.google.com/spreadsheets/d/e/2PACX-1vQJKO3upGfGOWStHGuktI2c0ULLQrysCe-B2qbSl3HwgZA1x8ZFekV7Vl_XeSoInKGiyoJD88iAB3q3/pub?output=csv", // 3: AP217 History 2025
-  "https://docs.google.com/spreadsheets/d/e/2PACX-1vQaRKeSBt4XfeC9uNf56p38DwscoPK0-eFM3J4-Vz8LeVBdgsClDZy0baU-FHyFv5cz-QNCXUVMwBfr/pub?gid=462296829&single=true&output=csv", // 4: AP213 Daily
-  "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ825Haq0XnIX_UDCtnyd5t94U943OJ_sCJdLj2-6XfbWT4KkLaQ-RWBL_esd4HHaQGJTW3hOV2qtax/pub?gid=779511679&single=true&output=csv", // 5: AP211 TW
-  "https://docs.google.com/spreadsheets/d/e/2PACX-1vRuulQ6E-VFeNU6otpWOOIZQOwcG8ybE0EdR_RooQLW1VYi6Xhtcl4KnADees6YIALU29jmBlODPeQQ/pub?gid=779511679&single=true&output=csv", // 6: AP212 US
-  "https://docs.google.com/spreadsheets/d/e/2PACX-1vTV4TXRt6GUxvN7ZPQYMfSMzaBskjCLKUQbHOJcOcyCBMwyrDYCbHK4MghK8N-Cfp_we_LkvV-bz9zg/pub?output=csv"  // 7: AP216 Scale
+  "https://docs.google.com/spreadsheets/d/e/2PACX-1vT1Vpn2SSkcf7QLqoMoAsdyusxtydfgIQD8pyoV6XojGFnf0zGu_WWuRnI4N3U-Hu0iGRzTrR7N-OD9/pub?output=csv", // 0: AP101 Price
+  "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ825Haq0XnIX_UDCtnyd5t94U943OJ_sCJdLj2-6XfbWT4KkLaQ-RWBL_esd4HHaQGJTW3hOV2qtax/pub?gid=779511679&single=true&output=csv", // 1: AP211 TW
+  "https://docs.google.com/spreadsheets/d/e/2PACX-1vRuulQ6E-VFeNU6otpWOOIZQOwcG8ybE0EdR_RooQLW1VYi6Xhtcl4KnADees6YIALU29jmBlODPeQQ/pub?gid=779511679&single=true&output=csv", // 2: AP212 US
+  "https://docs.google.com/spreadsheets/d/e/2PACX-1vQaRKeSBt4XfeC9uNf56p38DwscoPK0-eFM3J4-Vz8LeVBdgsClDZy0baU-FHyFv5cz-QNCXUVMwBfr/pub?gid=462296829&single=true&output=csv", // 3: AP213 Daily
+  "https://docs.google.com/spreadsheets/d/e/2PACX-1vTc6ZANKmAJQCXC9k7np_eIhAwC2hF_w9KSpseD0qogcPP0I2rPPhtesNEbHvG48b_tLh9qeu4tr21Q/pub?output=csv", // 4: AP214 Base
+  "https://docs.google.com/spreadsheets/d/e/2PACX-1vR5JvOGT3eB4xq9phw2dXHApJKOgQkUZcs69CsJfL0Iw3s6egADwA8HdbimrWUceQZl_73pnsSLVnQw/pub?output=csv", // 5: AP215 Dividend
+  "https://docs.google.com/spreadsheets/d/e/2PACX-1vTV4TXRt6GUxvN7ZPQYMfSMzaBskjCLKUQbHOJcOcyCBMwyrDYCbHK4MghK8N-Cfp_we_LkvV-bz9zg/pub?output=csv", // 6: AP216 Scale
+  "https://docs.google.com/spreadsheets/d/e/2PACX-1vQJKO3upGfGOWStHGuktI2c0ULLQrysCe-B2qbSl3HwgZA1x8ZFekV7Vl_XeSoInKGiyoJD88iAB3q3/pub?output=csv"  // 7: AP217 History 2025
 ];
 
 // Dynamic Base Date
@@ -304,7 +304,7 @@ const App: React.FC = () => {
 
   const processData = useCallback((txts: string[]) => {
       try {
-          const [txtBase, txtDiv, txtLatestPrice, txtHistPrice, txtDailyPrice, txtTwIndex, txtUsIndex, txtScale] = txts;
+          const [txtLatestPrice, txtTwIndex, txtUsIndex, txtDailyPrice, txtBase, txtDiv, txtScale, txtHistPrice] = txts;
 
           const parsedEtfs = parseEtfData(txtBase, txtLatestPrice, txtHistPrice, txtDailyPrice, txtScale);
           const dividendMap = parseDividendData(txtDiv);
@@ -341,7 +341,13 @@ const App: React.FC = () => {
               // 2. 計算預估殖利率 (含未來, 需有未來資料才算)
               const estYield = calculateEstimatedYield(divs, etf.priceCurrent, etf.category, etf.code);
 
-              // 3. 計算含息報酬
+              // 3. 計算報酬率 (不含息)
+              let finalReturnRate = etf.returnRate;
+              if (etf.priceBase > 0) {
+                  finalReturnRate = parseFloat((((etf.priceCurrent - etf.priceBase) / etf.priceBase) * 100).toFixed(2));
+              }
+
+              // 4. 計算含息報酬
               let finalTotalReturn = etf.totalReturn;
               if (etf.priceBase > 0) {
                   // 找出 Base Date 之後的所有配息 (僅歷史)
@@ -358,6 +364,7 @@ const App: React.FC = () => {
                 dividends: divs,
                 dividendYield: finalYield,
                 estYield: estYield,
+                returnRate: finalReturnRate,
                 totalReturn: finalTotalReturn
               };
           });
@@ -468,42 +475,80 @@ const App: React.FC = () => {
       setIsConfigured(false);
   };
 
+  const [addingPortfolioEtf, setAddingPortfolioEtf] = useState<EtfData | null>(null);
+  const [addPortfolioForm, setAddPortfolioForm] = useState({ date: '', shares: '', price: '', totalAmount: '' });
+
   const handleAddToPortfolio = useCallback((etf: EtfData) => {
-    const BUDGET = 500000;
-    const price = etf.priceCurrent || 10;
-    const rawShares = Math.floor(BUDGET / price);
-    const calculatedShares = Math.floor(rawShares / 1000) * 1000;
-    const finalShares = calculatedShares > 0 ? calculatedShares : 1000; 
+    setAddingPortfolioEtf(etf);
+    setAddPortfolioForm({
+        date: new Date().toISOString().split('T')[0].replace(/-/g, '/'),
+        shares: '',
+        price: (etf.priceCurrent || 0).toString(),
+        totalAmount: ''
+    });
+  }, []);
+
+  const handleAddPortfolioFormChange = (field: string, value: string) => {
+      let newForm = { ...addPortfolioForm, [field]: value };
+      
+      const numShares = parseFloat(newForm.shares || '0');
+      const numPrice = parseFloat(newForm.price || '0');
+      const numTotal = parseFloat(newForm.totalAmount || '0');
+
+      if (field === 'shares' || field === 'price') {
+          if (!isNaN(numShares) && !isNaN(numPrice) && newForm.shares !== '' && newForm.price !== '') {
+              newForm.totalAmount = Math.round(numShares * numPrice).toString();
+          }
+      } else if (field === 'totalAmount') {
+           if (!isNaN(numTotal) && !isNaN(numPrice) && numPrice > 0 && newForm.totalAmount !== '') {
+              newForm.shares = Math.round(numTotal / numPrice).toString();
+           }
+      }
+      setAddPortfolioForm(newForm);
+  };
+
+  const confirmAddToPortfolio = () => {
+    if (!addingPortfolioEtf) return;
+    
+    const shares = parseFloat(addPortfolioForm.shares);
+    const price = parseFloat(addPortfolioForm.price);
+    const totalAmount = parseFloat(addPortfolioForm.totalAmount);
+
+    if (isNaN(shares) || isNaN(price) || isNaN(totalAmount) || shares <= 0 || price <= 0) {
+        showToast('請填寫正確的股數與單價', 'error');
+        return;
+    }
 
     const newTransaction: Transaction = {
         id: Date.now().toString(),
-        date: new Date().toISOString().split('T')[0].replace(/-/g, '/'),
-        shares: finalShares,
-        price: price,
-        totalAmount: finalShares * price
+        date: addPortfolioForm.date || new Date().toISOString().split('T')[0].replace(/-/g, '/'),
+        shares,
+        price,
+        totalAmount
     };
 
     setPortfolio(prev => {
-        const existingItemIndex = prev.findIndex(p => p.id === etf.code);
+        const existingItemIndex = prev.findIndex(p => p.id === addingPortfolioEtf.code);
         let updatedPortfolio;
         if (existingItemIndex >= 0) {
             updatedPortfolio = [...prev];
             updatedPortfolio[existingItemIndex] = {
                 ...updatedPortfolio[existingItemIndex],
-                transactions: [newTransaction, ...updatedPortfolio[existingItemIndex].transactions]
+                transactions: [newTransaction, ...updatedPortfolio[existingItemIndex].transactions].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime())
             };
         } else {
             updatedPortfolio = [...prev, {
-                id: etf.code,
-                etf: etf,
+                id: addingPortfolioEtf.code,
+                etf: addingPortfolioEtf,
                 transactions: [newTransaction]
             }];
         }
         return updatedPortfolio;
     });
     
-    showToast(`成功加入！\n${etf.name}\n${finalShares}股`, 'success');
-  }, [showToast]);
+    showToast(`成功新增交易紀錄！\n${addingPortfolioEtf.name}\n${shares}股`, 'success');
+    setAddingPortfolioEtf(null);
+  };
 
   const handleUpdateTransaction = (etfCode: string, updatedTx: Transaction) => {
       setPortfolio(prev => prev.map(item => {
@@ -940,6 +985,48 @@ const App: React.FC = () => {
                 </div>
             </div>
         </div>
+      )}
+
+      {/* Add Portfolio Modal */}
+      {addingPortfolioEtf && (
+          <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setAddingPortfolioEtf(null)}>
+              <div className="bg-white rounded-xl w-full max-w-sm overflow-hidden flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
+                  <div className="bg-blue-900 px-4 py-3 flex justify-between items-center text-white shrink-0">
+                      <div>
+                          <h3 className="font-bold text-lg leading-tight">新增交易紀錄</h3>
+                          <p className="text-blue-200 text-sm">{addingPortfolioEtf.code} {addingPortfolioEtf.name}</p>
+                      </div>
+                      <button onClick={() => setAddingPortfolioEtf(null)} className="p-1 rounded-full hover:bg-white/20 transition-colors">
+                          <X className="w-5 h-5" />
+                      </button>
+                  </div>
+                  <div className="p-4 space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                          <div>
+                              <label className="text-xs text-slate-500 font-bold mb-1 block">日期</label>
+                              <input type="text" value={addPortfolioForm.date} onChange={(e) => handleAddPortfolioFormChange('date', e.target.value)} placeholder="YYYY/MM/DD" className="w-full border-slate-300 border rounded-lg px-3 py-2 outline-none focus:border-blue-500" />
+                          </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                          <div>
+                              <label className="text-xs text-slate-500 font-bold mb-1 block">股數</label>
+                              <input type="number" inputMode="numeric" value={addPortfolioForm.shares} onChange={(e) => handleAddPortfolioFormChange('shares', e.target.value)} className="w-full border-slate-300 border rounded-lg px-3 py-2 outline-none focus:border-blue-500" />
+                          </div>
+                          <div>
+                              <label className="text-xs text-slate-500 font-bold mb-1 block">單價</label>
+                              <input type="number" inputMode="decimal" step="0.01" value={addPortfolioForm.price} onChange={(e) => handleAddPortfolioFormChange('price', e.target.value)} className="w-full border-slate-300 border rounded-lg px-3 py-2 outline-none focus:border-blue-500" />
+                          </div>
+                      </div>
+                      <div>
+                          <label className="text-xs text-slate-500 font-bold mb-1 block">成交總價</label>
+                          <input type="number" inputMode="numeric" value={addPortfolioForm.totalAmount} onChange={(e) => handleAddPortfolioFormChange('totalAmount', e.target.value)} className="w-full border-slate-300 border rounded-lg px-3 py-2 outline-none focus:border-blue-500" />
+                      </div>
+                      <button onClick={confirmAddToPortfolio} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg mt-2 transition-colors">
+                          確認新增
+                      </button>
+                  </div>
+              </div>
+          </div>
       )}
 
       {toast.visible && (

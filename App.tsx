@@ -489,42 +489,88 @@ const App: React.FC = () => {
       setIsConfigured(false);
   };
 
+  const formatMoney = (val: number) => Math.round(val).toLocaleString('en-US');
+  const formatShare = (val: number) => Math.round(val).toLocaleString('en-US');
+  const parseRaw = (val: string | number): number => {
+      if (typeof val === 'number') return val;
+      if (!val) return 0;
+      return parseFloat(val.replace(/,/g, ''));
+  };
+
+  const [addingEtf, setAddingEtf] = useState<EtfData | null>(null);
+  const [addForm, setAddForm] = useState<{ id: string, date: string, shares: string, price: string, totalAmount: string } | null>(null);
+
   const handleAddToPortfolio = useCallback((etf: EtfData) => {
+    const today = new Date().toISOString().split('T')[0].replace(/-/g, '/');
     const BUDGET = 500000;
     const price = etf.priceCurrent || 10;
     const rawShares = Math.floor(BUDGET / price);
     const calculatedShares = Math.floor(rawShares / 1000) * 1000;
     const finalShares = calculatedShares > 0 ? calculatedShares : 1000; 
 
-    const newTransaction: Transaction = {
+    setAddingEtf(etf);
+    setAddForm({
         id: Date.now().toString(),
-        date: new Date().toISOString().split('T')[0].replace(/-/g, '/'),
-        shares: finalShares,
-        price: price,
-        totalAmount: finalShares * price
-    };
-
-    setPortfolio(prev => {
-        const existingItemIndex = prev.findIndex(p => p.id === etf.code);
-        let updatedPortfolio;
-        if (existingItemIndex >= 0) {
-            updatedPortfolio = [...prev];
-            updatedPortfolio[existingItemIndex] = {
-                ...updatedPortfolio[existingItemIndex],
-                transactions: [newTransaction, ...updatedPortfolio[existingItemIndex].transactions]
-            };
-        } else {
-            updatedPortfolio = [...prev, {
-                id: etf.code,
-                etf: etf,
-                transactions: [newTransaction]
-            }];
-        }
-        return updatedPortfolio;
+        date: today,
+        shares: formatShare(finalShares),
+        price: price.toString(),
+        totalAmount: formatMoney(Math.round(finalShares * price))
     });
-    
-    showToast(`成功加入！\n${etf.name}\n${finalShares}股`, 'success');
-  }, [showToast]);
+  }, []);
+
+  const handleAddFormChange = (field: string, value: string) => {
+      if (!addForm) return;
+      const updated: any = { ...addForm, [field]: value };
+      if (field === 'shares' || field === 'price') {
+          const rawShares = parseRaw(updated.shares);
+          const rawPrice = parseRaw(updated.price);
+          if (!isNaN(rawShares) && !isNaN(rawPrice)) {
+              updated.totalAmount = formatMoney(Math.round(rawShares * rawPrice));
+          }
+      }
+      setAddForm(updated);
+  };
+
+  const confirmAddEtf = () => {
+      if (!addingEtf || !addForm) return;
+
+      const shares = parseRaw(addForm.shares);
+      const price = parseRaw(addForm.price);
+      const totalAmount = parseRaw(addForm.totalAmount);
+
+      if (shares === 0 || price === 0) { alert("數值不能為 0"); return; }
+      
+      const newTransaction: Transaction = {
+          id: addForm.id,
+          date: addForm.date,
+          shares,
+          price,
+          totalAmount
+      };
+
+      setPortfolio(prev => {
+          const existingItemIndex = prev.findIndex(p => p.id === addingEtf.code);
+          let updatedPortfolio;
+          if (existingItemIndex >= 0) {
+              updatedPortfolio = [...prev];
+              updatedPortfolio[existingItemIndex] = {
+                  ...updatedPortfolio[existingItemIndex],
+                  transactions: [newTransaction, ...updatedPortfolio[existingItemIndex].transactions]
+              };
+          } else {
+              updatedPortfolio = [...prev, {
+                  id: addingEtf.code,
+                  etf: addingEtf,
+                  transactions: [newTransaction]
+              }];
+          }
+          return updatedPortfolio;
+      });
+      
+      showToast(`成功加入！\n${addingEtf.name}\n${shares}股`, 'success');
+      setAddingEtf(null);
+      setAddForm(null);
+  };
 
   const handleUpdateTransaction = (etfCode: string, updatedTx: Transaction) => {
       setPortfolio(prev => prev.map(item => {
@@ -962,6 +1008,46 @@ const App: React.FC = () => {
                             儲存設定
                         </button>
                     </div>
+                </div>
+            </div>
+        </div>
+      )}
+
+      {/* --- Add to Portfolio Modal --- */}
+      {addingEtf && addForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]">
+            <div className="bg-white w-full max-w-sm rounded-2xl shadow-xl overflow-hidden flex flex-col">
+                <div className="bg-emerald-50 px-6 py-4 border-b border-emerald-100 flex justify-between items-center">
+                    <div>
+                        <h3 className="text-lg font-bold text-emerald-900">加入自組月配</h3>
+                        <p className="text-sm text-emerald-700/80 mt-0.5">{addingEtf.code} {addingEtf.name}</p>
+                    </div>
+                    <button onClick={() => { setAddingEtf(null); setAddForm(null); }} className="text-emerald-500 hover:text-emerald-700"><X className="w-6 h-6" /></button>
+                </div>
+                
+                <div className="p-6 bg-white space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="text-[12px] text-slate-500 font-bold mb-1 block">日期</label>
+                            <input type="text" value={addForm.date} onChange={(e) => handleAddFormChange('date', e.target.value)} placeholder="YYYY/MM/DD" className="w-full border-slate-300 border rounded-lg px-3 py-2 outline-none focus:border-blue-500"/>
+                        </div>
+                        <div>
+                            <label className="text-[12px] text-slate-500 font-bold mb-1 block text-right">成交總價</label>
+                            <input type="text" value={addForm.totalAmount} onChange={(e) => handleAddFormChange('totalAmount', e.target.value)} className="w-full border-slate-300 border rounded-lg px-3 py-2 outline-none focus:border-blue-500 text-right font-mono" />
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="text-[12px] text-slate-500 font-bold mb-1 block">股數</label>
+                            <input type="text" value={addForm.shares} onChange={(e) => handleAddFormChange('shares', e.target.value)} className="w-full border-slate-300 border rounded-lg px-3 py-2 outline-none focus:border-blue-500 font-mono" />
+                        </div>
+                        <div>
+                            <label className="text-[12px] text-slate-500 font-bold mb-1 block text-right">單價</label>
+                            <input type="text" value={addForm.price} onChange={(e) => handleAddFormChange('price', e.target.value)} className="w-full border-slate-300 border rounded-lg px-3 py-2 outline-none focus:border-blue-500 text-right font-mono" />
+                        </div>
+                    </div>
+                    <button onClick={confirmAddEtf} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg mt-2 transition-colors">確認新增</button>
+                    <button onClick={() => { setAddingEtf(null); setAddForm(null); }} className="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-3 rounded-lg mt-2 transition-colors">取消</button>
                 </div>
             </div>
         </div>

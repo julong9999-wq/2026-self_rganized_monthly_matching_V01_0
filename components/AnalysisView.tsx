@@ -8,6 +8,7 @@ interface Props {
   etfs: EtfData[];
   lastUpdated: Date | null;
   filterMode: 'period' | 'category';
+  onAddToPortfolio?: (etf: EtfData) => void;
 }
 
 const CATEGORY_MAPPING: Record<string, string[]> = {
@@ -133,7 +134,7 @@ const getCardStyle = (etf: EtfData) => {
     }
 };
 
-const AnalysisView: React.FC<Props> = ({ etfs, lastUpdated, filterMode }) => {
+const AnalysisView: React.FC<Props> = ({ etfs, lastUpdated, filterMode, onAddToPortfolio }) => {
   const [activeFilterCat, setActiveFilterCat] = useState('高息');
   const [activeFilterPeriod, setActiveFilterPeriod] = useState('AA');
 
@@ -143,7 +144,6 @@ const AnalysisView: React.FC<Props> = ({ etfs, lastUpdated, filterMode }) => {
   const [chartEtf, setChartEtf] = useState<EtfData | null>(null);
   const [showAnnouncements, setShowAnnouncements] = useState(false);
   const [announcementFilter, setAnnouncementFilter] = useState<'quarterly' | 'monthly' | 'bond' | 'other'>('quarterly');
-  const [addedListModal, setAddedListModal] = useState<string | null>(null);
 
   // --- Filtering Logic ---
   const filteredEtfs = useMemo(() => {
@@ -304,12 +304,6 @@ const AnalysisView: React.FC<Props> = ({ etfs, lastUpdated, filterMode }) => {
       );
   };
 
-  const handleAddModal = (name: string) => {
-      setAddedListModal(name);
-      setTimeout(() => {
-          setAddedListModal(null);
-      }, 2000);
-  };
 
   // --- Chart Modal ---
   const renderChartModal = () => {
@@ -494,17 +488,6 @@ const AnalysisView: React.FC<Props> = ({ etfs, lastUpdated, filterMode }) => {
 
   return (
     <div className="flex flex-col h-full bg-slate-50 relative">
-      {addedListModal && (
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-slate-800/90 text-white px-6 py-4 rounded-xl shadow-2xl z-50 flex flex-col items-center gap-2 animate-[fadeIn_0.2s_ease-out]">
-            <Plus className="w-8 h-8 text-emerald-400" />
-            <div className="text-lg font-bold text-center">
-                【{addedListModal}】<br/>
-                <span className="text-[14px] font-normal opacity-90">已新增至自選名單</span>
-            </div>
-            <div className="text-[12px] opacity-60 mt-1">(非自動帶入存檔)</div>
-          </div>
-      )}
-
       {/* A1 + A2 Fixed Header */}
       <div className="shrink-0 z-10 bg-slate-50 shadow-sm border-b border-slate-200">
          {/* A1: Base Date & Data Date */}
@@ -594,9 +577,9 @@ const AnalysisView: React.FC<Props> = ({ etfs, lastUpdated, filterMode }) => {
                             <div className="text-right flex justify-end px-1">
                                 {/* Button: Add to Watchlist (Plus) */}
                                 <button
-                                    onClick={(e) => { e.stopPropagation(); handleAddModal(etf.code); }}
+                                    onClick={(e) => { e.stopPropagation(); onAddToPortfolio?.(etf); }}
                                     className="w-10 h-9 flex items-center justify-center bg-emerald-100 text-emerald-700 rounded-lg hover:bg-emerald-200 transition-colors border border-emerald-200 shadow-sm"
-                                    title="新增自選名單"
+                                    title="加入自組月配"
                                 >
                                     <Plus className="w-5 h-5" />
                                 </button>

@@ -47,6 +47,7 @@ const App: React.FC = () => {
   // App State
   const [isConfigured, setIsConfigured] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>('performance');
+  const [performanceFilterMode, setPerformanceFilterMode] = useState<'period' | 'category'>('period');
   
   // Key State
   const [apiKey, setApiKey] = useState<string>('');
@@ -623,10 +624,11 @@ const App: React.FC = () => {
       switch (activeTab) {
           case 'performance': 
             return (
-                <PerformanceView 
+                <AnalysisView 
                     etfs={etfs} 
                     onAddToPortfolio={handleAddToPortfolio} 
                     lastUpdated={lastUpdated}
+                    filterMode={performanceFilterMode}
                 />
             );
           
@@ -642,15 +644,6 @@ const App: React.FC = () => {
                 </div>
             );
 
-          case 'analysis':
-             return (
-                <AnalysisView 
-                    etfs={etfs}
-                    lastUpdated={lastUpdated}
-                    onAddToPortfolio={handleAddToPortfolio}
-                />
-             );
-          
           case 'market_index':
             return (
                 <div className="h-full overflow-hidden">
@@ -716,7 +709,17 @@ const App: React.FC = () => {
         </div>
         
         <div className="absolute left-0 right-0 flex justify-center pointer-events-none">
-            <h1 className="text-xl font-bold tracking-wide pointer-events-auto shadow-sm">{getHeaderTitle()}</h1>
+            {activeTab === 'performance' ? (
+                <div className="flex items-center gap-2 pointer-events-auto">
+                    <h1 className="text-xl font-bold tracking-wide shadow-sm pr-2">績效分析</h1>
+                    <div className="flex bg-blue-800/50 rounded-lg p-0.5">
+                        <button onClick={() => setPerformanceFilterMode('period')} className={`px-2 py-1 text-xs font-bold rounded-md transition-all ${performanceFilterMode === 'period' ? 'bg-white text-blue-900 shadow-sm' : 'text-blue-100 hover:text-white'}`}>週期</button>
+                        <button onClick={() => setPerformanceFilterMode('category')} className={`px-2 py-1 text-xs font-bold rounded-md transition-all ${performanceFilterMode === 'category' ? 'bg-white text-blue-900 shadow-sm' : 'text-blue-100 hover:text-white'}`}>類別</button>
+                    </div>
+                </div>
+            ) : (
+                <h1 className="text-xl font-bold tracking-wide pointer-events-auto shadow-sm">{getHeaderTitle()}</h1>
+            )}
         </div>
 
         <div className="flex items-center justify-end z-10 gap-3 w-32">
@@ -975,12 +978,9 @@ const App: React.FC = () => {
       )}
 
       {isConfigured && (
-          <nav className="bg-blue-900 text-white h-20 shrink-0 grid grid-cols-6 items-center text-center shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-20">
+          <nav className="bg-blue-900 text-white h-20 shrink-0 grid grid-cols-5 items-center text-center shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-20">
             <button onClick={() => setActiveTab('performance')} className={`flex flex-col items-center justify-center h-full gap-1 transition-colors ${activeTab === 'performance' ? 'text-yellow-400' : 'text-slate-300 hover:text-white'}`}>
-                <LayoutDashboard className="w-5 h-5" /><span className="text-[10px] font-medium whitespace-nowrap">績效查詢</span>
-            </button>
-            <button onClick={() => setActiveTab('analysis')} className={`flex flex-col items-center justify-center h-full gap-1 transition-colors ${activeTab === 'analysis' ? 'text-yellow-400' : 'text-slate-300 hover:text-white'}`}>
-                <BarChart3 className="w-5 h-5" /><span className="text-[10px] font-medium whitespace-nowrap">分析資料</span>
+                <LayoutDashboard className="w-5 h-5" /><span className="text-[10px] font-medium whitespace-nowrap">績效分析</span>
             </button>
             <button onClick={() => setActiveTab('portfolio')} className={`flex flex-col items-center justify-center h-full gap-1 transition-colors ${activeTab === 'portfolio' ? 'text-yellow-400' : 'text-slate-300 hover:text-white'}`}>
                 <PieChart className="w-5 h-5" /><span className="text-[10px] font-medium whitespace-nowrap">自組月配</span>

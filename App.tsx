@@ -14,12 +14,16 @@ import { LayoutDashboard, PieChart, Activity, Briefcase, Bot, Megaphone, CheckCi
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
-// Default URLs
-const DEFAULT_URL_1 = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT1Vpn2SSkcf7QLqoMoAsdyusxtydfgIQD8pyoV6XojGFnf0zGu_WWuRnI4N3U-Hu0iGRzTrR7N-OD9/pub?output=csv";
-const DEFAULT_URL_2 = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQdHAXZ0A9Uno0bztIwJbuYSmLUAXUR8SDeHn-Z6GWkuwx1PGkUppejuytX2fjB33kRO1hV35Ku31fl/pub?output=csv";
-const DEFAULT_URL_3 = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ825Haq0XnIX_UDCtnyd5t94U943OJ_sCJdLj2-6XfbWT4KkLaQ-RWBL_esd4HHaQGJTW3hOV2qtax/pub?gid=779511679&single=true&output=csv";
-const DEFAULT_URL_4 = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRuulQ6E-VFeNU6otpWOOIZQOwcG8ybE0EdR_RooQLW1VYi6Xhtcl4KnADees6YIALU29jmBlODPeQQ/pub?gid=779511679&single=true&output=csv";
-const DEFAULT_URL_5 = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQaRKeSBt4XfeC9uNf56p38DwscoPK0-eFM3J4-Vz8LeVBdgsClDZy0baU-FHyFv5cz-QNCXUVMwBfr/pub?gid=462296829&single=true&output=csv";
+const DEFAULT_URLS = [
+  "https://docs.google.com/spreadsheets/d/e/2PACX-1vTc6ZANKmAJQCXC9k7np_eIhAwC2hF_w9KSpseD0qogcPP0I2rPPhtesNEbHvG48b_tLh9qeu4tr21Q/pub?output=csv", // 0: AP214 Base
+  "https://docs.google.com/spreadsheets/d/e/2PACX-1vR5JvOGT3eB4xq9phw2dXHApJKOgQkUZcs69CsJfL0Iw3s6egADwA8HdbimrWUceQZl_73pnsSLVnQw/pub?output=csv", // 1: AP215 Dividend
+  "https://docs.google.com/spreadsheets/d/e/2PACX-1vT1Vpn2SSkcf7QLqoMoAsdyusxtydfgIQD8pyoV6XojGFnf0zGu_WWuRnI4N3U-Hu0iGRzTrR7N-OD9/pub?output=csv", // 2: AP101 Price
+  "https://docs.google.com/spreadsheets/d/e/2PACX-1vQJKO3upGfGOWStHGuktI2c0ULLQrysCe-B2qbSl3HwgZA1x8ZFekV7Vl_XeSoInKGiyoJD88iAB3q3/pub?output=csv", // 3: AP217 History 2025
+  "https://docs.google.com/spreadsheets/d/e/2PACX-1vQaRKeSBt4XfeC9uNf56p38DwscoPK0-eFM3J4-Vz8LeVBdgsClDZy0baU-FHyFv5cz-QNCXUVMwBfr/pub?gid=462296829&single=true&output=csv", // 4: AP213 Daily
+  "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ825Haq0XnIX_UDCtnyd5t94U943OJ_sCJdLj2-6XfbWT4KkLaQ-RWBL_esd4HHaQGJTW3hOV2qtax/pub?gid=779511679&single=true&output=csv", // 5: AP211 TW
+  "https://docs.google.com/spreadsheets/d/e/2PACX-1vRuulQ6E-VFeNU6otpWOOIZQOwcG8ybE0EdR_RooQLW1VYi6Xhtcl4KnADees6YIALU29jmBlODPeQQ/pub?gid=779511679&single=true&output=csv", // 6: AP212 US
+  "https://docs.google.com/spreadsheets/d/e/2PACX-1vTV4TXRt6GUxvN7ZPQYMfSMzaBskjCLKUQbHOJcOcyCBMwyrDYCbHK4MghK8N-Cfp_we_LkvV-bz9zg/pub?output=csv"  // 7: AP216 Scale
+];
 
 // Dynamic Base Date
 const getBaseDateStr = () => getDynamicBaseDateStr();
@@ -27,12 +31,8 @@ const LOCAL_STORAGE_KEY_API = 'gemini_api_key';
 
 type Tab = 'performance' | 'portfolio' | 'analysis' | 'market_index' | 'holding_analysis' | 'daily_analysis';
 
-const CACHE_KEY_DATA_1 = 'sheet_data_1_v7';
-const CACHE_KEY_DATA_2 = 'sheet_data_2_v7';
-const CACHE_KEY_DATA_3 = 'sheet_data_3_v7';
-const CACHE_KEY_DATA_4 = 'sheet_data_4_v7';
-const CACHE_KEY_DATA_5 = 'sheet_data_5_v7';
-const CACHE_KEY_TIME = 'sheet_last_fetch_time_v7';
+const CACHE_KEY_DATA_PREFIX = 'sheet_data_v8_';
+const CACHE_KEY_TIME = 'sheet_last_fetch_time_v8';
 const CACHE_KEY_PORTFOLIO = 'user_portfolio_v1'; // 新增 Portfolio 儲存 Key
 const CACHE_DURATION = 60 * 1000; // 1 分鐘
 
@@ -302,14 +302,16 @@ const App: React.FC = () => {
       return parseFloat(((totalEstimatedAmount / currentPrice) * 100).toFixed(2));
   };
 
-  const processData = useCallback((txt1: string, txt2: string, txt3: string, txt4: string, txt5: string) => {
+  const processData = useCallback((txts: string[]) => {
       try {
-          const parsedEtfs = parseEtfData(txt2);
-          const dividendMap = parseDividendData(txt1);
+          const [txtBase, txtDiv, txtLatestPrice, txtHistPrice, txtDailyPrice, txtTwIndex, txtUsIndex, txtScale] = txts;
+
+          const parsedEtfs = parseEtfData(txtBase, txtLatestPrice, txtHistPrice, txtDailyPrice, txtScale);
+          const dividendMap = parseDividendData(txtDiv);
           
-          if (txt3) setTwIndices(parseMarketIndex(txt3));
-          if (txt4) setUsIndices(parseMarketIndex(txt4));
-          if (txt5) setStockDailyPrices(parseStockDailyPrice(txt5));
+          if (txtTwIndex) setTwIndices(parseMarketIndex(txtTwIndex));
+          if (txtUsIndex) setUsIndices(parseMarketIndex(txtUsIndex));
+          if (txtDailyPrice) setStockDailyPrices(parseStockDailyPrice(txtDailyPrice));
 
           const baseDateStr = getBaseDateStr();
           const baseDate = new Date(baseDateStr);
@@ -369,23 +371,19 @@ const App: React.FC = () => {
       }
   }, [showToast]);
 
-  const handleStartDataLoad = useCallback(async (url1: string, url2: string, url3: string, url4: string, url5: string, forceRefresh = false) => {
+  const handleStartDataLoad = useCallback(async (urls: string[], forceRefresh = false) => {
     setIsLoading(true);
     try {
         const cachedTimeStr = localStorage.getItem(CACHE_KEY_TIME);
-        const cachedData1 = localStorage.getItem(CACHE_KEY_DATA_1);
-        const cachedData2 = localStorage.getItem(CACHE_KEY_DATA_2);
-        const cachedData3 = localStorage.getItem(CACHE_KEY_DATA_3) || '';
-        const cachedData4 = localStorage.getItem(CACHE_KEY_DATA_4) || '';
-        const cachedData5 = localStorage.getItem(CACHE_KEY_DATA_5) || '';
+        const cachedData = Array.from({ length: 8 }, (_, i) => localStorage.getItem(`${CACHE_KEY_DATA_PREFIX}${i}`) || '');
         
         const now = Date.now();
         const isCacheValid = cachedTimeStr && (now - Number(cachedTimeStr) < CACHE_DURATION);
 
-        if (!forceRefresh && isCacheValid && cachedData1 && cachedData2 && cachedData3 && cachedData4 && cachedData5) {
+        if (!forceRefresh && isCacheValid && cachedData.slice(0, 5).every(d => d.length > 0)) {
             console.log("Using Cached Data");
             try {
-              processData(cachedData1, cachedData2, cachedData3, cachedData4, cachedData5);
+              processData(cachedData);
               setLastUpdated(new Date(Number(cachedTimeStr)));
               setIsLoading(false);
               return;
@@ -394,36 +392,21 @@ const App: React.FC = () => {
             }
         }
 
-        const csvUrl1 = convertToCsvUrl(url1) + `&_t=${now}`;
-        const csvUrl2 = convertToCsvUrl(url2) + `&_t=${now}`;
-        const csvUrl3 = url3 ? convertToCsvUrl(url3) + `&_t=${now}` : '';
-        const csvUrl4 = url4 ? convertToCsvUrl(url4) + `&_t=${now}` : '';
-        const csvUrl5 = url5 ? convertToCsvUrl(url5) + `&_t=${now}` : '';
-
-        // Safe fetch function that won't throw if URL is empty or fetch fails
-        const safeFetch = (u: string) => u ? smartFetch(u).catch(e => {
+        const safeFetch = (u: string) => u ? smartFetch(convertToCsvUrl(u) + `&_t=${now}`).catch(e => {
             console.warn(`Fetch failed for auxiliary URL ${u}`, e);
             return '';
         }) : Promise.resolve('');
 
-        const txt1 = await smartFetch(csvUrl1);
-        const txt2 = await smartFetch(csvUrl2);
-        const txt3 = await safeFetch(csvUrl3);
-        const txt4 = await safeFetch(csvUrl4);
-        const txt5 = await safeFetch(csvUrl5);
+        const txts = await Promise.all(urls.map(u => safeFetch(u)));
 
-        if (txt1.trim().startsWith("<!DOCTYPE") || txt2.trim().startsWith("<!DOCTYPE") || txt3.trim().startsWith("<!DOCTYPE") || txt4.trim().startsWith("<!DOCTYPE")) {
+        if (txts[0].trim().startsWith("<!DOCTYPE") || txts[1].trim().startsWith("<!DOCTYPE")) {
             throw new Error("抓取到的不是 CSV 資料");
         }
 
-        localStorage.setItem(CACHE_KEY_DATA_1, txt1);
-        localStorage.setItem(CACHE_KEY_DATA_2, txt2);
-        localStorage.setItem(CACHE_KEY_DATA_3, txt3);
-        localStorage.setItem(CACHE_KEY_DATA_4, txt4);
-        localStorage.setItem(CACHE_KEY_DATA_5, txt5);
+        txts.forEach((txt, i) => localStorage.setItem(`${CACHE_KEY_DATA_PREFIX}${i}`, txt));
         localStorage.setItem(CACHE_KEY_TIME, now.toString());
 
-        processData(txt1, txt2, txt3, txt4, txt5);
+        processData(txts);
         setLastUpdated(new Date(now));
 
     } catch (err: any) {
@@ -442,22 +425,18 @@ const App: React.FC = () => {
   }, [processData]);
 
   useEffect(() => {
-    const cachedData1 = localStorage.getItem(CACHE_KEY_DATA_1);
-    const cachedData2 = localStorage.getItem(CACHE_KEY_DATA_2);
-    const cachedData3 = localStorage.getItem(CACHE_KEY_DATA_3) || '';
-    const cachedData4 = localStorage.getItem(CACHE_KEY_DATA_4) || '';
-    const cachedData5 = localStorage.getItem(CACHE_KEY_DATA_5) || '';
+    const cachedData = Array.from({ length: 8 }, (_, i) => localStorage.getItem(`${CACHE_KEY_DATA_PREFIX}${i}`) || '');
     const cachedTimeStr = localStorage.getItem(CACHE_KEY_TIME);
 
-    if (cachedData1 && cachedData2 && cachedData3 && cachedData4 && cachedData5 && cachedTimeStr) {
+    if (cachedData.slice(0, 5).every(d => d.length > 0) && cachedTimeStr) {
         try {
-            processData(cachedData1, cachedData2, cachedData3, cachedData4, cachedData5);
+            processData(cachedData);
             setLastUpdated(new Date(Number(cachedTimeStr)));
         } catch(e) {
-            handleStartDataLoad(DEFAULT_URL_1, DEFAULT_URL_2, DEFAULT_URL_3, DEFAULT_URL_4, DEFAULT_URL_5, true);
+            handleStartDataLoad(DEFAULT_URLS, true);
         }
     } else {
-        handleStartDataLoad(DEFAULT_URL_1, DEFAULT_URL_2, DEFAULT_URL_3, DEFAULT_URL_4, DEFAULT_URL_5, true);
+        handleStartDataLoad(DEFAULT_URLS, true);
     }
   }, [processData, handleStartDataLoad]);
 
@@ -609,12 +588,8 @@ const App: React.FC = () => {
           return (
             <div className="h-full p-4 overflow-y-auto">
                 <SheetConfigView 
-                    defaultUrl1={DEFAULT_URL_1} 
-                    defaultUrl2={DEFAULT_URL_2} 
-                    defaultUrl3={DEFAULT_URL_3}
-                    defaultUrl4={DEFAULT_URL_4}
-                    defaultUrl5={DEFAULT_URL_5}
-                    onStart={(u1, u2, u3, u4, u5) => handleStartDataLoad(u1, u2, u3, u4, u5, true)} 
+                    defaultUrls={DEFAULT_URLS}
+                    onStart={(urls) => handleStartDataLoad(urls, true)} 
                     isLoading={isLoading}
                 />
             </div>

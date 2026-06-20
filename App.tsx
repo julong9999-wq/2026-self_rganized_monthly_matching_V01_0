@@ -729,7 +729,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-slate-50 font-sans text-slate-900 max-w-md mx-auto shadow-2xl overflow-hidden border-x border-slate-200 relative">
+    <div className="flex flex-col h-[100dvh] bg-slate-50 font-sans text-slate-900 max-w-md mx-auto shadow-2xl overflow-hidden border-x border-slate-200 relative">
       <header className="bg-blue-900 text-white pt-safe h-auto min-h-[5rem] pb-2 shrink-0 flex items-center justify-between px-4 shadow-md z-20 relative">
         <div className="flex items-center justify-start z-10 gap-3 w-32">
             {isConfigured && (

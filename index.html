@@ -17,8 +17,11 @@
     <!-- PWA & Mobile Web App Meta Tags -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="自組月配" />
+    <meta name="apple-touch-fullscreen" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="theme-color" content="#1e3a8a" />
+    <meta name="format-detection" content="telephone=no" />
     
     <!-- App Icons and Manifest -->
     <link rel="manifest" href="/manifest.json" />
@@ -29,10 +32,22 @@
     <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
-      body {
+      html, body {
         font-family: 'Noto Sans TC', sans-serif;
         background-color: #f8fafc;
-        overscroll-behavior: none; /* Prevent pull-to-refresh on mobile if not desired */
+        margin: 0;
+        padding: 0;
+        width: 100vw;
+        height: 100dvh;
+        overflow: hidden;
+        overscroll-behavior: none;
+        overscroll-behavior-y: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        touch-action: manipulation;
       }
       
       /* 全域隱藏捲動條但保留功能 (Hide scrollbars globally) */

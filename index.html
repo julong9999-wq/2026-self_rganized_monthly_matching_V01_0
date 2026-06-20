@@ -12,8 +12,20 @@
       gtag('config', 'G-X13S0ZTD81');
     </script>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Google Sheets Analyzer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    
+    <!-- PWA & Mobile Web App Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="theme-color" content="#1e3a8a" />
+    
+    <!-- App Icons and Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/applet_icon.jpg" />
+    <link rel="icon" type="image/jpeg" href="/applet_icon.jpg" />
+
+    <title>2026 自組月配 投資助理</title>
     <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
@@ -39,6 +51,20 @@
       * {
         -ms-overflow-style: none;
         scrollbar-width: none;
+      }
+      
+      /* Safe Area Utility Classes for Mobile Devices */
+      .pt-safe {
+        padding-top: env(safe-area-inset-top, 0px);
+      }
+      .pb-safe {
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+      }
+      .mt-safe {
+        margin-top: env(safe-area-inset-top, 0px);
+      }
+      .mb-safe {
+        margin-bottom: env(safe-area-inset-bottom, 0px);
       }
     </style>
   <script type="importmap">

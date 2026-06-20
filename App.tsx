@@ -730,7 +730,7 @@ const App: React.FC = () => {
 
   return (
     <div className="flex flex-col h-screen bg-slate-50 font-sans text-slate-900 max-w-md mx-auto shadow-2xl overflow-hidden border-x border-slate-200 relative">
-      <header className="bg-blue-900 text-white h-20 shrink-0 flex items-center justify-between px-4 shadow-md z-20 relative">
+      <header className="bg-blue-900 text-white pt-safe h-auto min-h-[5rem] pb-2 shrink-0 flex items-center justify-between px-4 shadow-md z-20 relative">
         <div className="flex items-center justify-start z-10 gap-3 w-32">
             {isConfigured && (
                 <>
@@ -769,12 +769,15 @@ const App: React.FC = () => {
         </div>
 
         <div className="flex items-center justify-end z-10 gap-3 w-32">
-             <button
-                onClick={() => setShowBetaModal(true)}
-                className="text-[13px] font-bold text-yellow-300 tracking-wider border border-yellow-400/30 px-2 py-1 rounded bg-yellow-400/10 whitespace-nowrap hover:bg-yellow-400/20 transition-colors cursor-pointer active:scale-95"
+             <a
+                href="https://2026-etf-vrs-v01-2.vercel.app/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[13px] font-bold text-yellow-300 tracking-wider border border-yellow-400/30 px-2.5 py-1 rounded bg-yellow-400/10 whitespace-nowrap hover:bg-yellow-400/20 transition-colors cursor-pointer active:scale-95 flex items-center gap-1"
             >
-                V01.1
-            </button>
+                <span>影片報告</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+            </a>
         </div>
       </header>
 
@@ -1064,7 +1067,7 @@ const App: React.FC = () => {
       )}
 
       {isConfigured && (
-          <nav className="bg-blue-900 text-white h-20 shrink-0 grid grid-cols-5 items-center text-center shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-20">
+          <nav className="bg-blue-900 text-white pb-safe h-auto min-h-[5rem] pt-2 shrink-0 grid grid-cols-5 items-center text-center shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-20">
             <button onClick={() => setActiveTab('performance')} className={`flex flex-col items-center justify-center h-full gap-1 transition-colors ${activeTab === 'performance' ? 'text-yellow-400' : 'text-slate-300 hover:text-white'}`}>
                 <LayoutDashboard className="w-5 h-5" /><span className="text-[10px] font-medium whitespace-nowrap">績效分析</span>
             </button>

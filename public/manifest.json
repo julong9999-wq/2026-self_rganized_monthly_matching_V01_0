@@ -1,0 +1,19 @@
+{
+  "name": "2026 自組月配 投資助理",
+  "short_name": "自組月配助理",
+  "description": "您的台股月配息投資規劃與績效診斷助理",
+  "start_url": ".",
+  "id": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#1e3a8a",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/applet_icon.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -769,15 +769,12 @@ const App: React.FC = () => {
         </div>
 
         <div className="flex items-center justify-end z-10 gap-3 w-32">
-             <a
-                href="https://2026-etf-vrs-v01-2.vercel.app/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[13px] font-bold text-yellow-300 tracking-wider border border-yellow-400/30 px-2.5 py-1 rounded bg-yellow-400/10 whitespace-nowrap hover:bg-yellow-400/20 transition-colors cursor-pointer active:scale-95 flex items-center gap-1"
+             <button
+                onClick={() => setShowBetaModal(true)}
+                className="text-[13px] font-bold text-yellow-300 tracking-wider border border-yellow-400/30 px-2 py-1 rounded bg-yellow-400/10 whitespace-nowrap hover:bg-yellow-400/20 transition-colors cursor-pointer active:scale-95"
             >
-                <span>影片報告</span>
-                <ExternalLink className="w-3.5 h-3.5" />
-            </a>
+                V01.1
+            </button>
         </div>
       </header>
 
